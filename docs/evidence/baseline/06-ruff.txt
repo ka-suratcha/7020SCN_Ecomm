@@ -1,0 +1,80 @@
+ecomm\settings.py:72:89: E501 Line too long (91 > 88)
+ecomm\settings.py:156:42: W292 [*] No newline at end of file
+home\admin.py:1:28: F401 [*] `django.contrib.admin` imported but unused
+home\models.py:8:26: W292 [*] No newline at end of file
+home\tests.py:1:25: F401 [*] `django.test.TestCase` imported but unused
+home\urls.py:10:2: W292 [*] No newline at end of file
+home\views.py:9:35: E701 Multiple statements on one line (colon)
+home\views.py:11:46: E701 Multiple statements on one line (colon)
+home\views.py:29:1: W293 [*] Blank line contains whitespace
+orders\models.py:20:1: W293 [*] Blank line contains whitespace
+orders\models.py:30:89: E501 Line too long (102 > 88)
+orders\models.py:55:1: W293 [*] Blank line contains whitespace
+orders\models.py:68:48: W292 [*] No newline at end of file
+orders\tests.py:1:25: F401 [*] `django.test.TestCase` imported but unused
+orders\urls.py:7:89: E501 Line too long (90 > 88)
+orders\urls.py:13:89: E501 Line too long (98 > 88)
+orders\urls.py:23:2: W292 [*] No newline at end of file
+orders\utiles\__init__.py:31:1: W293 [*] Blank line contains whitespace
+orders\views.py:45:12: E713 [*] Test for membership should be `not in`
+orders\views.py:193:41: F541 [*] f-string without any placeholders
+orders\views.py:201:41: F541 [*] f-string without any placeholders
+orders\views.py:202:1: W293 [*] Blank line contains whitespace
+orders\views.py:210:89: E501 Line too long (90 > 88)
+orders\views.py:211:45: F541 [*] f-string without any placeholders
+orders\views.py:214:89: E501 Line too long (95 > 88)
+orders\views.py:215:45: F541 [*] f-string without any placeholders
+orders\views.py:268:1: W293 [*] Blank line contains whitespace
+orders\views.py:272:1: W293 [*] Blank line contains whitespace
+orders\views.py:365:1: W293 [*] Blank line contains whitespace
+orders\views.py:375:9: B020 Loop control variable `order` overrides iterable it iterates
+products\models.py:41:89: E501 Line too long (95 > 88)
+products\tests.py:1:25: F401 [*] `django.test.TestCase` imported but unused
+products\urls.py:8:2: W292 [*] No newline at end of file
+products\views.py:2:43: F401 [*] `django.views.decorators.cache.cache_page` imported but unused
+products\views.py:12:1: W293 [*] Blank line contains whitespace
+products\views.py:36:1: W293 [*] Blank line contains whitespace
+products\views.py:48:6: W292 [*] No newline at end of file
+seller_dashboard\admin.py:1:28: F401 [*] `django.contrib.admin` imported but unused
+seller_dashboard\models.py:1:23: F401 [*] `django.db.models` imported but unused
+seller_dashboard\tests.py:1:25: F401 [*] `django.test.TestCase` imported but unused
+seller_dashboard\urls.py:11:89: E501 Line too long (89 > 88)
+seller_dashboard\urls.py:14:2: W292 [*] No newline at end of file
+seller_dashboard\views.py:10:29: F401 [*] `users.models` imported but unused
+seller_dashboard\views.py:59:9: E722 Do not use bare `except`
+shops\tests.py:1:25: F401 [*] `django.test.TestCase` imported but unused
+shops\urls.py:9:2: W292 [*] No newline at end of file
+shops\views.py:23:1: W293 [*] Blank line contains whitespace
+shops\views.py:25:1: W293 [*] Blank line contains whitespace
+shops\views.py:28:1: W293 [*] Blank line contains whitespace
+shops\views.py:85:89: E501 Line too long (93 > 88)
+users\admin.py:6:38: W292 [*] No newline at end of file
+users\management\commands\setup_dev_data.py:6:89: E501 Line too long (96 > 88)
+users\management\commands\setup_dev_data.py:24:1: W293 [*] Blank line contains whitespace
+users\management\commands\setup_dev_data.py:32:89: E501 Line too long (122 > 88)
+users\management\commands\setup_dev_data.py:34:89: E501 Line too long (93 > 88)
+users\management\commands\setup_dev_data.py:47:89: E501 Line too long (125 > 88)
+users\management\commands\setup_dev_data.py:49:89: E501 Line too long (96 > 88)
+users\management\commands\setup_dev_data.py:64:1: W293 [*] Blank line contains whitespace
+users\management\commands\setup_dev_data.py:71:89: E501 Line too long (142 > 88)
+users\management\commands\setup_dev_data.py:73:89: E501 Line too long (91 > 88)
+users\models.py:20:89: E501 Line too long (92 > 88)
+users\models.py:42:89: E501 Line too long (118 > 88)
+users\models.py:63:1: W293 [*] Blank line contains whitespace
+users\tests.py:1:25: F401 [*] `django.test.TestCase` imported but unused
+users\urls.py:10:1: W293 [*] Blank line contains whitespace
+users\urls.py:12:89: E501 Line too long (93 > 88)
+users\urls.py:13:2: W292 [*] No newline at end of file
+users\views.py:75:25: W291 [*] Trailing whitespace
+users\views.py:77:31: W291 [*] Trailing whitespace
+users\views.py:78:35: W291 [*] Trailing whitespace
+users\views.py:131:1: W293 [*] Blank line contains whitespace
+users\views.py:133:89: E501 Line too long (106 > 88)
+users\views.py:143:1: W293 [*] Blank line contains whitespace
+users\views.py:161:1: W293 [*] Blank line contains whitespace
+users\views.py:183:1: W293 [*] Blank line contains whitespace
+users\views.py:193:1: W293 [*] Blank line contains whitespace
+users\views.py:200:1: W293 [*] Blank line contains whitespace
+users\views.py:210:1: W293 [*] Blank line contains whitespace
+Found 78 errors.
+[*] 54 fixable with `--fix`.
