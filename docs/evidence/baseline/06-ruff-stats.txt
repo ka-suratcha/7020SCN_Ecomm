@@ -1,0 +1,12 @@
+24	W293	[*] blank-line-with-whitespace
+20	E501	[ ] line-too-long
+11	W292	[*] missing-newline-at-end-of-file
+11	F401	[*] unused-import
+ 4	F541	[*] f-string-missing-placeholders
+ 3	W291	[*] trailing-whitespace
+ 2	E701	[ ] multiple-statements-on-one-line-colon
+ 1	E722	[ ] bare-except
+ 1	B020	[ ] loop-variable-overrides-iterator
+ 1	E713	[*] not-in-test
+Found 78 errors.
+[*] 54 fixable with `--fix`.

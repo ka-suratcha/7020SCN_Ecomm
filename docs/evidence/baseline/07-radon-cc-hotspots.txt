@@ -1,0 +1,19 @@
+orders\views.py
+    C 136:0 CartCheckoutView - B (8)
+    M 180:4 CartCheckoutView.post - B (8)
+    F 347:0 paymentCart - B (7)
+    M 259:4 CheckoutView.post - B (7)
+    F 310:0 payment - B (6)
+    M 137:4 CartCheckoutView.get - B (6)
+    C 240:0 CheckoutView - B (6)
+shops\views.py
+    C 18:0 RegisterShop - B (6)
+    M 26:4 RegisterShop.post - B (6)
+users\views.py
+    M 111:4 Profile.post - B (7)
+    C 40:0 Register - B (6)
+    M 48:4 Register.post - B (6)
+    C 94:0 Profile - B (6)
+
+13 blocks (classes, functions, methods) analyzed.
+Average complexity: B (6.538461538461538)
