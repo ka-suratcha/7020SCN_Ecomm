@@ -1,0 +1,124 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.3, pytest-9.1.1, pluggy-1.6.0 -- C:\dev\Ecomm\7020SCN_Ecomm\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.10, settings: ecomm.settings (from ini)
+rootdir: C:\dev\Ecomm\7020SCN_Ecomm
+configfile: pytest.ini
+testpaths: tests
+plugins: cov-7.1.0, django-4.14.0
+collecting ... collected 8 items
+
+tests/test_smoke.py::test_home_page_loads_for_a_visitor PASSED           [ 12%]
+tests/test_tc1_totals.py::test_tc1_1_order_total_with_whole_price PASSED [ 25%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[19.99x1] PASSED [ 37%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[19.99x2] PASSED [ 50%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[19.99x3] PASSED [ 62%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[1.10x3] FAILED [ 75%]
+tests/test_tc1_totals.py::test_tc1_3_cart_page_shows_exact_subtotal FAILED [ 87%]
+tests/test_tc1_totals.py::test_tc1_4_cart_order_total_adds_all_orders FAILED [100%]
+
+================================== FAILURES ===================================
+______________ test_tc1_2_order_total_with_decimal_price[1.10x3] ______________
+
+customer = <User: customer>, address = <Addresses: Test Customer>
+make_product = <function make_product.<locals>._make_product at 0x00000208F68AAFC0>
+price = 1.1, quantity = 3, expected = 3.3
+
+    @pytest.mark.parametrize(
+        ("price", "quantity", "expected"),
+        [
+            (19.99, 1, 19.99),  # BVA: lowest valid quantity
+            (19.99, 2, 39.98),
+            (19.99, 3, 59.97),
+            (1.10, 3, 3.30),  # EP: decimal price; float gives 3.3000000000000003
+        ],
+        ids=["19.99x1", "19.99x2", "19.99x3", "1.10x3"],
+    )
+    def test_tc1_2_order_total_with_decimal_price(
+        customer, address, make_product, price, quantity, expected
+    ):
+        """TC-1.2: the order total is exact for decimal prices."""
+        # Arrange: a product with a decimal price (EP: decimal price).
+        product = make_product("Pen", price)
+    
+        # Act: create an order. Orders.save() calculates total_amount.
+        order = Orders.objects.create(
+            user=customer, address=address, product=product, quantity=quantity
+        )
+    
+        # Assert: the total is exact, to the penny.
+>       assert order.total_amount == expected
+E       assert 3.3000000000000003 == 3.3
+E        +  where 3.3000000000000003 = <Orders: customer@test.com>.total_amount
+
+tests\test_tc1_totals.py:62: AssertionError
+__________________ test_tc1_3_cart_page_shows_exact_subtotal __________________
+
+client = <django.test.client.Client object at 0x00000208F676D480>
+make_product = <function make_product.<locals>._make_product at 0x00000208F68ABA60>
+
+    def test_tc1_3_cart_page_shows_exact_subtotal(client, make_product):
+        """TC-1.3: the cart page shows the exact subtotal for two products."""
+        # Arrange: two products with decimal prices.
+        book = make_product("Book", 19.99)
+        mug = make_product("Mug", 5.01)
+    
+        # Add 1 book and 2 mugs to the cart.
+        # add_to_cart (orders/views.py) stores the cart in the session.
+        # The session is the server's short-term memory for one visitor.
+        # reverse("add_to_cart", args=[book.slug]) gives "/add_to_cart/book/".
+        client.get(reverse("add_to_cart", args=[book.slug]))
+        client.get(reverse("add_to_cart", args=[mug.slug]))
+        client.get(reverse("add_to_cart", args=[mug.slug]))
+    
+        # Act: open the cart page. cart() calculates the subtotal.
+        response = client.get(reverse("cart"))
+    
+        # Assert: 19.99 x 1 + 5.01 x 2 = 30.01.
+        # - response.content is the HTML of the page; decode() turns it into text.
+        # - We check what the customer sees, so we look for "$30.01" in the page.
+        # - response.context["subtotal"] is the value the view sent to the template.
+        #   The text after the comma is the message pytest shows if the check fails,
+        #   so the failure is easy to read (the full HTML page is very long).
+        assert response.status_code == 200
+        page = response.content.decode()
+        shown = response.context["subtotal"]
+>       assert "$30.01" in page, f"The cart page shows the subtotal as ${shown}"
+E       AssertionError: The cart page shows the subtotal as $30.009999999999998
+E       assert '$30.01' in '<!DOCTYPE html>\n<html lang="en">\n  <head>\n    \n    <meta charset="utf-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1" />\n    <link\n  href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"\n  rel="stylesheet"\n/>\n<link\n  href="https://getbootstrap.com/docs/5.3/assets/css/docs.css"\n  rel="stylesheet"\n/>\n<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet" />\n<link\n  rel="stylesheet"\n  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"\n/>\n<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>\n\n    <title> Cart  | Ecomm</title>\n  </head>\n  <body class="p-3 m-0 border-0 bd-example m-0 border-0">\n    <nav class="navbar navbar-expand-lg bg-body-tertiary">\n  <div class="container-fluid">\n    <a class="navbar-brand" href="/">Ecomm</a>\n    <button\n      class="navbar-toggler"\n      type="button"\n      data-bs-toggle="collapse"\n      data-bs-target="#navbarSupportedContent"\n      aria-controls="navbarSupportedContent"\n      aria-expanded="false"\n      aria-label="Toggle navigat... class="djDebugPanelTitle">\n      <h3>Cache calls from 1 backend</h3>\n      <button type="button" class="djDebugClose">╫</button>\n    </div>\n    <div class="djDebugPanelContent">\n      \n        <div class="djdt-loader"></div>\n        <div class="djdt-scroll"></div>\n      \n    </div>\n  </div>\n\n\n  \n    \n\n\n  <div id="SignalsPanel" class="djdt-panelContent djdt-hidden">\n    <div class="djDebugPanelTitle">\n      <h3>Signals</h3>\n      <button type="button" class="djDebugClose">╫</button>\n    </div>\n    <div class="djDebugPanelContent">\n      \n        <div class="djdt-loader"></div>\n        <div class="djdt-scroll"></div>\n      \n    </div>\n  </div>\n\n\n  \n    \n\n\n  <div id="CommunityPanel" class="djdt-panelContent djdt-hidden">\n    <div class="djDebugPanelTitle">\n      <h3>Community</h3>\n      <button type="button" class="djDebugClose">╫</button>\n    </div>\n    <div class="djDebugPanelContent">\n      \n        <div class="djdt-loader"></div>\n        <div class="djdt-scroll"></div>\n      \n    </div>\n  </div>\n\n\n  \n    \n\n\n\n  \n    \n\n\n\n  \n  <div id="djDebugWindow" class="djdt-panelContent djdt-hidden"></div>\n</div>\n</body>\n</html>\n'
+
+tests\test_tc1_totals.py:91: AssertionError
+_________________ test_tc1_4_cart_order_total_adds_all_orders _________________
+
+customer = <User: customer>, address = <Addresses: Test Customer>
+make_product = <function make_product.<locals>._make_product at 0x00000208F68BCB80>
+
+    def test_tc1_4_cart_order_total_adds_all_orders(customer, address, make_product):
+        """TC-1.4: a cart order total is the exact sum of its orders."""
+        # Arrange: two orders, as CartCheckoutView.post() creates them at checkout.
+        book_order = Orders.objects.create(
+            user=customer, address=address, product=make_product("Book", 19.99), quantity=1
+        )
+        mug_order = Orders.objects.create(
+            user=customer, address=address, product=make_product("Mug", 5.01), quantity=2
+        )
+        cart_order = CartInOrder.objects.create(user=customer)
+        cart_order.orders_in.add(book_order, mug_order)
+    
+        # Act: place() (orders/models.py) adds the total_amount of every order.
+        cart_order.place()
+    
+        # Assert: 19.99 + 10.02 = 30.01.
+>       assert cart_order.total == 30.01
+E       assert 30.009999999999998 == 30.01
+E        +  where 30.009999999999998 = <CartInOrder: customer@test.com>.total
+
+tests\test_tc1_totals.py:110: AssertionError
+-------------------------- Captured stderr teardown ---------------------------
+Destroying test database for alias 'default'...
+
+=========================== short test summary info ===========================
+FAILED tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[1.10x3]
+FAILED tests/test_tc1_totals.py::test_tc1_3_cart_page_shows_exact_subtotal - ...
+FAILED tests/test_tc1_totals.py::test_tc1_4_cart_order_total_adds_all_orders
+========================= 3 failed, 5 passed in 9.50s =========================
