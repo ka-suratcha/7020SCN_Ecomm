@@ -40,7 +40,10 @@ def create_checkout_session_cart(order):
                     'product_data': {
                         'name': product.product.name,
                     },
-                    'unit_amount': int(product.total_amount * 100),  # Convert to cents
+                    # Price of ONE item, in cents (Issue #8).
+                    # Stripe multiplies unit_amount by quantity itself, so
+                    # total_amount (already price x quantity) would charge twice.
+                    'unit_amount': int(product.product.price * 100),
                 },
                 'quantity': product.quantity,
             })
@@ -61,5 +64,7 @@ def create_checkout_session_cart(order):
 def check_payment_status(payment_intent_id):
     if not payment_intent_id:
         return "Unpaid"
-    payment_intent = stripe.stripe.checkout.Session.retrieve(payment_intent_id)
+    # stripe.checkout, not stripe.stripe.checkout: the stripe library has no
+    # "stripe" inside it, so the old line raised AttributeError (Issue #9).
+    payment_intent = stripe.checkout.Session.retrieve(payment_intent_id)
     return payment_intent['payment_status']

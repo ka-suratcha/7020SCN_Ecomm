@@ -13,7 +13,7 @@ and the problems I found. I add to this file each time I write or run tests.
 |---|---|---|---|---|---|---|
 | TC-1 | Order and cart totals | 7 | 7 | 0 | D-1 (fixed) | Run 02 |
 | TC-2 | Stock after checkout | 9 | 9 | 0 | D-2, D-3 (fixed) | Run 05 |
-| TC-3 | Payment with Stripe (mocked) | - | - | - | - | Not written yet |
+| TC-3 | Card payment with Stripe (mocked) | 8 | 8 | 0 | D-4, D-5 (fixed) | Run 08 |
 | TC-4 | Access control (who can open which page) | - | - | - | - | Not written yet |
 | TC-5 | Regression (all tests again after each fix) | - | - | - | - | Not run yet |
 | TC-6 | Performance (Locust) | - | - | - | - | Not run yet |
@@ -47,6 +47,9 @@ I only save a log when the result changes (new tests, a defect found, or a defec
 | 03 | 13 Oct 2026 | Branch `test/tc2-stock`, app code not changed | Added TC-2 | 13 passed, 3 failed | `run-03.txt` |
 | 04 | 13 Oct 2026 | Branch `test/tc2-stock` + D-2 fix | Quantity must be a whole number of at least 1; added TC-2.3 "abc" | 16 passed, 1 failed (TC-2.5, D-3) | `run-04.txt` |
 | 05 | 13 Oct 2026 | Branch `test/tc2-stock` + D-3 fix | Cart checkout checks every item first, then orders inside `transaction.atomic` | 17 passed | `run-05.txt` |
+| 06 | 13 Oct 2026 | Branch `test/tc3-payment`, app code not changed | Added TC-3 | 23 passed, 2 failed | `run-06.txt` |
+| 07 | 13 Oct 2026 | Branch `test/tc3-payment` + D-4 fix | Cart sends the price of one item to Stripe | 24 passed, 1 failed (TC-3.5, D-5) | `run-07.txt` |
+| 08 | 13 Oct 2026 | Branch `test/tc3-payment` + D-5 fix | `stripe.stripe` typo fixed | 25 passed | `run-08.txt` |
 
 Command (PowerShell 7): `pytest -v > docs\evidence\tests\run-NN.txt`
 
@@ -112,6 +115,34 @@ Notes:
 - Three tests failed, but they have two different causes in two places in the code, so they are two defects (D-2, D-3).
 - The "abc" row was added with the D-2 fix, because the fix also rejects values that are not numbers, and every change needs a test. Before the fix, `int("abc")` raised an error, so the page would crash (server error 500). Normal users cannot do this, but anyone can send a request by hand.
 
+### TC-3 Card payment with Stripe (mocked)
+
+Why: the amount the app sends to Stripe is what the customer pays. Stripe takes amounts in cents, so $19.99 must be sent as 1999.
+
+How I test it without Stripe: `unittest.mock.patch` puts a fake ("mock") in place of the Stripe functions in `orders/utiles/__init__.py`. No internet, no real key and no real money are needed, and the test can read exactly what the app sent to Stripe.
+
+How I chose the test data:
+- Equivalence partitioning: decimal prices that float cannot store exactly (19.99, 1.10, 0.29)
+- Quantity 1 and 2, for Buy Now and for the cart
+- Error case: Stripe is not available
+
+File: `tests/test_tc3_payment.py`
+
+| ID | Test | Data | Expected | Actual (run 06) | Run 06 | Run 07 | Run 08 |
+|---|---|---|---|---|---|---|---|
+| TC-3.1 | Buy Now by card sends the exact amount | 19.99 x 1 | 1999 cents | 1999 | Pass | Pass | Pass |
+| | | 1.10 x 1 | 110 cents | 110 | Pass | Pass | Pass |
+| | | 0.29 x 1 | 29 cents | 29 | Pass | Pass | Pass |
+| | | 19.99 x 2 | 1999 per item, 3998 total | as expected | Pass | Pass | Pass |
+| TC-3.2 | Cart payment charges each item once | 1 x 12.50 + 2 x 5.01 | 2252 cents | 3254 cents | Fail (D-4) | Pass | Pass |
+| TC-3.3 | Stripe error does not create a payment | Stripe raises an error | back to home page, no Payment saved | as expected | Pass | Pass | Pass |
+| TC-3.4 | Payment done marks the payment as paid | back from Stripe | Payment status = paid | as expected | Pass | Pass | Pass |
+| TC-3.5 | Order page shows the card payment status | Stripe says "paid" | page opens and shows "paid" | page crashes (AttributeError) | Fail (D-5) | Fail (D-5) | Pass |
+
+Notes:
+- TC-3.1 confirms that F-9 is gone: with `Decimal`, `int(Decimal("19.99") * 100)` is 1999. With float it would be 1998 (and 0.29 would be 28). The D-1 fix also fixed F-9.
+- TC-3.2 runs `paymentCart`, the code with the Ruff B020 warning (F-3). The loop works, so F-3 is a naming problem only, not a defect.
+
 ## 5. Defects
 
 ### D-1 Money totals are not exact
@@ -164,6 +195,36 @@ The current code does neither: it orders part of the cart but tells the customer
 
 **Not covered (limitation):** two customers who buy the last item at the same moment. This needs a database lock (for example `select_for_update`) and a test that runs two requests at once. I did not test it.
 
+### D-4 Cart card payment charges items with quantity more than 1 too much
+
+| Status | Severity | Found by | Issue | Fix | Re-test |
+|---|---|---|---|---|---|
+| Verified | High | TC-3.2 in run 06 | [#8](https://github.coventry.ac.uk/kamolpanus/7020SCN_Ecomm/issues/8) | Send the product price as `unit_amount` | Run 07: TC-3.2 passes |
+
+**What happens:** the cart has 1 lamp ($12.50) and 2 mugs ($5.01). Stripe is asked to charge $32.54, not $22.52.
+
+**Is my test wrong?** No. TC-3.1 (Buy Now) sends the right amounts with the same fake Stripe, and 12.50 + 2 x 5.01 = 22.52.
+
+**Cause:** `create_checkout_session_cart` (`orders/utiles/__init__.py` line 43) sends the order **total** (`total_amount`, already price x quantity) as the price of **one** item, and then also sends the quantity. Stripe multiplies again: 10.02 x 2 = 20.04 for the mugs.
+
+**Fix:** `unit_amount` is now `product.price` (the price of one item), as Buy Now does. Stripe multiplies it by the quantity.
+
+### D-5 Order page crashes for card orders
+
+| Status | Severity | Found by | Issue | Fix | Re-test |
+|---|---|---|---|---|---|
+| Verified | Medium | TC-3.5 in run 06 | [#9](https://github.coventry.ac.uk/kamolpanus/7020SCN_Ecomm/issues/9) | `stripe.checkout.Session.retrieve` | Run 08: TC-3.5 passes |
+
+**What happens:** a customer who paid by card opens their order page, and the page crashes (server error 500).
+
+**Is my test wrong?** No. The error happens before the fake Stripe is even called: Python cannot find `stripe.stripe`.
+
+**Cause:** `check_payment_status` (`orders/utiles/__init__.py` line 64) calls `stripe.stripe.checkout.Session.retrieve`. The word `stripe` is written twice. The `stripe` library has no `stripe` inside it, so Python raises `AttributeError`. I found this while reading the code to write TC-3.5.
+
+**Fix:** the line now calls `stripe.checkout.Session.retrieve`.
+
+**Why nobody saw D-4 and D-5 before:** the repository had no tests, and the settings only have placeholder Stripe keys, so this payment code was probably never run. At baseline, coverage of `orders/utiles` was 23%.
+
 ## 6. Findings not yet confirmed
 
 Things that look wrong but no test has proved yet. Most come from the baseline tools (`docs/evidence/baseline/`).
@@ -172,13 +233,13 @@ Things that look wrong but no test has proved yet. Most come from the baseline t
 |---|---|---|---|
 | F-1 | Admin page (screenshot 04) | Names are misspelt: Orderss, Productss, Shopss, Categorys, Addressess | Low priority, fix if there is time |
 | F-2 | Ruff E722 | `except:` with no error type in `seller_dashboard/views.py` line 59 hides all errors when reading the payment status | Test in TC-3 |
-| F-3 | Ruff B020 | In `orders/views.py` line 375 the loop variable `order` has the same name as the list it loops over | Test in TC-3 |
+| F-3 | Ruff B020 | In `orders/views.py` line 375 the loop variable `order` has the same name as the list it loops over | Tested in TC-3.2: works. Naming problem only, not a defect |
 | F-4 | `check --deploy` W018 | `DEBUG = True` (Debug Toolbar is visible) | Move to an environment variable |
 | F-5 | Bandit B105, `check --deploy` W009 | Django `SECRET_KEY` is written in `settings.py` and is public on GitHub | Move to an environment variable |
 | F-6 | Bandit B105 | `STRIPE_SECRET_KEY` is in `settings.py` (only a placeholder now) | Move with F-5 |
 | F-7 | Bandit B106 | Demo passwords in `setup_dev_data.py` | OK, demo data only |
 | F-8 | `check --deploy` (5 warnings) | HTTPS and cookie settings not set | Only matters for a real server |
-| F-9 | Reading the code for TC-1 | `int(price * 100)` cuts off decimals, so $19.99 would be sent to Stripe as 1998 cents | The D-1 fix may also fix this (`Decimal("19.99") * 100` is 1999). Confirm in TC-3 |
-| F-10 | Reading the code for TC-1 | Cart checkout sends price x quantity as the unit price and also sends the quantity, so the quantity is counted twice (2 x $10 → $40) | Test in TC-3, could be serious |
+| F-9 | Reading the code for TC-1 | `int(price * 100)` cuts off decimals, so $19.99 would be sent to Stripe as 1998 cents | Tested in TC-3.1: gone, fixed by the D-1 fix (Decimal) |
+| F-10 | Reading the code for TC-1 | Cart checkout sends price x quantity as the unit price and also sends the quantity, so the quantity is counted twice | Confirmed by TC-3.2: now defect D-4 |
 | F-11 | Writing the fixtures | `Category.owner` and `Products.category` default to id 1, which might not exist | Note only |
 | F-12 | Reading `products/models.py` | Names do not follow PEP 8: the class `variants` starts with a small letter, and the field `Products.variants` has the same name as the class. Model names are plural (`Products`, `Orders`) | Not fixing: renaming models needs a migration and changes in many files, for a small gain |
