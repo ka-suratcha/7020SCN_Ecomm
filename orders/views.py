@@ -271,7 +271,22 @@ class CheckoutView(View):
             return HttpResponseRedirect("/")
         
 
-        qty = int(request.POST.get("quantity", 1))
+        # Check the quantity before any order is made (Issue #5).
+        # - It comes from the request, so anyone can send any value,
+        #   even without the form (for example 0, -1 or "abc").
+        # - int("abc") gives an error. We set qty to 0 instead,
+        #   so the check below rejects it with a message.
+        #   Without this, the page would crash (server error 500).
+        # - Two limits: at least 1 (checked here),
+        #   and not more than the stock (checked after this).
+        try:
+            qty = int(request.POST.get("quantity", 1))
+        except (TypeError, ValueError):
+            qty = 0
+        if qty < 1:
+            messages.info(request, "Quantity must be at least 1", "alert-danger")
+            return HttpResponseRedirect("/")
+
         if product.in_stock < qty:
             messages.info(request, "Not enough stock", "alert-danger")
             return HttpResponseRedirect("/")

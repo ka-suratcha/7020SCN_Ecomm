@@ -12,7 +12,7 @@ and the problems I found. I add to this file each time I write or run tests.
 | Group | What it checks | Tests | Pass | Fail | Defects | Status |
 |---|---|---|---|---|---|---|
 | TC-1 | Order and cart totals | 7 | 7 | 0 | D-1 (fixed) | Run 02 |
-| TC-2 | Stock after checkout | 8 | 5 | 3 | D-2, D-3 | Run 03 |
+| TC-2 | Stock after checkout | 9 | 8 | 1 | D-2 (fixed), D-3 | Run 04 |
 | TC-3 | Payment with Stripe (mocked) | - | - | - | - | Not written yet |
 | TC-4 | Access control (who can open which page) | - | - | - | - | Not written yet |
 | TC-5 | Regression (all tests again after each fix) | - | - | - | - | Not run yet |
@@ -45,6 +45,7 @@ I only save a log when the result changes (new tests, a defect found, or a defec
 | 01 | 12 Oct 2026 | `main` (`10fa58f`) + new TC-1 tests, app code not changed | Added TC-1 | 5 passed, 3 failed | `run-01.txt` |
 | 02 | 13 Oct 2026 | Branch `test/tc1-totals` + D-1 fix | Money fields changed to `DecimalField`; tests use `Decimal` | 8 passed | `run-02.txt` |
 | 03 | 13 Oct 2026 | Branch `test/tc2-stock`, app code not changed | Added TC-2 | 13 passed, 3 failed | `run-03.txt` |
+| 04 | 13 Oct 2026 | Branch `test/tc2-stock` + D-2 fix | Quantity must be a whole number of at least 1; added TC-2.3 "abc" | 16 passed, 1 failed (TC-2.5, D-3) | `run-04.txt` |
 
 Command (PowerShell 7): `pytest -v > docs\evidence\tests\run-NN.txt`
 
@@ -87,26 +88,28 @@ Rules I test:
 
 How I chose the test data (5 in stock):
 - Boundary value analysis: quantity 1 (lowest valid), 5 (= stock), 6 (= stock + 1)
-- Equivalence partitioning: invalid quantities 0 and -1. The form has no quantity box, but the server reads `quantity` from the request (`orders/views.py` line 274), so anyone can send any value.
+- Equivalence partitioning: invalid quantities 0 and -1, and a value that is not a number ("abc"). The form has no quantity box, but the server reads `quantity` from the request (`orders/views.py` line 274), so anyone can send any value.
 
 All tests use "Cash On Delivery", so no Stripe call is made (Stripe is TC-3).
 
 File: `tests/test_tc2_stock.py`
 
-| ID | Test | Data | Expected | Actual (run 03) | Run 03 |
-|---|---|---|---|---|---|
-| TC-2.1 | Buy Now creates an order and reduces stock | buy 2 | stock 3; order qty 2, total 25.00, Pending | as expected | Pass |
-| TC-2.2 | Buy Now stock boundaries | buy 1 | accepted, stock 4 | as expected | Pass |
-| | | buy 5 | accepted, stock 0 | as expected | Pass |
-| | | buy 6 | rejected, stock 5 | as expected | Pass |
-| TC-2.3 | Buy Now rejects 0 or less | buy 0 | rejected, stock 5 | order with qty 0, total 0.00 | Fail (D-2) |
-| | | buy -1 | rejected, stock 5 | order with qty -1, total -12.50, stock 6 | Fail (D-2) |
-| TC-2.4 | Cart checkout orders every item | 1 lamp + 2 mugs | 2 orders, stock 4 and 3, total 22.52, cart empty | as expected | Pass |
-| TC-2.5 | Cart checkout orders nothing if one item is short | 1 lamp (5 in stock) + 3 mugs (2 in stock) | no orders, stock 5 and 2 | 1 order + 1 cart order, lamp stock 4 | Fail (D-3) |
+| ID | Test | Data | Expected | Actual (run 03) | Run 03 | Run 04 |
+|---|---|---|---|---|---|---|
+| TC-2.1 | Buy Now creates an order and reduces stock | buy 2 | stock 3; order qty 2, total 25.00, Pending | as expected | Pass | Pass |
+| TC-2.2 | Buy Now stock boundaries | buy 1 | accepted, stock 4 | as expected | Pass | Pass |
+| | | buy 5 | accepted, stock 0 | as expected | Pass | Pass |
+| | | buy 6 | rejected, stock 5 | as expected | Pass | Pass |
+| TC-2.3 | Buy Now rejects 0 or less | buy 0 | rejected, stock 5 | order with qty 0, total 0.00 | Fail (D-2) | Pass |
+| | | buy -1 | rejected, stock 5 | order with qty -1, total -12.50, stock 6 | Fail (D-2) | Pass |
+| | | buy "abc" | rejected, stock 5 | (added in run 04) | - | Pass |
+| TC-2.4 | Cart checkout orders every item | 1 lamp + 2 mugs | 2 orders, stock 4 and 3, total 22.52, cart empty | as expected | Pass | Pass |
+| TC-2.5 | Cart checkout orders nothing if one item is short | 1 lamp (5 in stock) + 3 mugs (2 in stock) | no orders, stock 5 and 2 | 1 order + 1 cart order, lamp stock 4 | Fail (D-3) | Fail (D-3) |
 
 Notes:
 - TC-2 tests use the Django test client and log in with `force_login()`, so they test the views, not only the models.
 - Three tests failed, but they have two different causes in two places in the code, so they are two defects (D-2, D-3).
+- The "abc" row was added with the D-2 fix, because the fix also rejects values that are not numbers, and every change needs a test. Before the fix, `int("abc")` raised an error, so the page would crash (server error 500). Normal users cannot do this, but anyone can send a request by hand.
 
 ## 5. Defects
 
@@ -128,7 +131,7 @@ Notes:
 
 | Status | Severity | Found by | Issue | Fix | Re-test |
 |---|---|---|---|---|---|
-| Open | High | TC-2.3 (0 and -1) in run 03 | [#] | [commit] | [run 04] |
+| Verified | High | TC-2.3 (0 and -1) in run 03 | [#5](https://github.coventry.ac.uk/kamolpanus/7020SCN_Ecomm/issues/5) | Quantity check in `CheckoutView.post` | Run 04: TC-2.3 passes |
 
 **What happens:** with quantity -1, an order is made with a total of -12.50, and stock goes **up** from 5 to 6. Quantity 0 makes an empty order.
 
@@ -136,13 +139,13 @@ Notes:
 
 **Cause:** `CheckoutView.post` (`orders/views.py` line 275) only checks that the quantity is not more than the stock. It never checks that the quantity is at least 1. Then line 299 does `in_stock -= qty`, so 5 - (-1) = 6.
 
-**Plan to fix:** reject a quantity below 1 (and a value that is not a number), with a message, before any order is made.
+**Fix:** `CheckoutView.post` now turns the quantity into a whole number, treats a value that is not a number as 0, and rejects anything below 1 with the message "Quantity must be at least 1", before any order is made.
 
 ### D-3 Cart checkout orders some items when another item is short
 
 | Status | Severity | Found by | Issue | Fix | Re-test |
 |---|---|---|---|---|---|
-| Open | Medium | TC-2.5 in run 03 | [#] | [commit] | [run 04] |
+| Open | Medium | TC-2.5 in run 03 | [#6](https://github.coventry.ac.uk/kamolpanus/7020SCN_Ecomm/issues/6) | [commit] | [run 05] |
 
 **What happens:** the cart has 1 lamp and 3 mugs, but only 2 mugs are in stock. The customer sees "Not enough stock", but the lamp order is already made and its stock is already 4. The cart order is not finished (`place()` is not called) and the cart is not cleared, so trying again orders the lamp a second time.
 

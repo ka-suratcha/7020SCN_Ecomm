@@ -88,16 +88,16 @@ def test_tc2_2_buy_now_stock_boundaries(
     assert lamp.in_stock == stock_after
 
 
-@pytest.mark.parametrize("quantity", [0, -1], ids=["qty0", "qty-1"])
-def test_tc2_3_buy_now_rejects_zero_or_negative_quantity(
+@pytest.mark.parametrize("quantity", [0, -1, "abc"], ids=["qty0", "qty-1", "qty-abc"])
+def test_tc2_3_buy_now_rejects_invalid_quantity(
     client, customer, address, make_product, quantity
 ):
-    """TC-2.3: a quantity of 0 or less is rejected and stock does not change."""
+    """TC-2.3: a quantity below 1 or not a number is rejected; stock stays."""
     # Arrange: 5 lamps in stock.
     lamp = make_product("Lamp", Decimal("12.50"), in_stock=5)
     client.force_login(customer)
 
-    # Act: send an invalid quantity (EP: invalid partition, below 1).
+    # Act: send an invalid quantity (EP: invalid partitions, below 1 and not a number).
     buy_now(client, lamp, address, quantity)
 
     # Assert: no order, and stock is still 5.
