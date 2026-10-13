@@ -40,7 +40,10 @@ def create_checkout_session_cart(order):
                     'product_data': {
                         'name': product.product.name,
                     },
-                    'unit_amount': int(product.total_amount * 100),  # Convert to cents
+                    # Price of ONE item, in cents (Issue #8).
+                    # Stripe multiplies unit_amount by quantity itself, so
+                    # total_amount (already price x quantity) would charge twice.
+                    'unit_amount': int(product.product.price * 100),
                 },
                 'quantity': product.quantity,
             })

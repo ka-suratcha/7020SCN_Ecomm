@@ -13,7 +13,7 @@ and the problems I found. I add to this file each time I write or run tests.
 |---|---|---|---|---|---|---|
 | TC-1 | Order and cart totals | 7 | 7 | 0 | D-1 (fixed) | Run 02 |
 | TC-2 | Stock after checkout | 9 | 9 | 0 | D-2, D-3 (fixed) | Run 05 |
-| TC-3 | Card payment with Stripe (mocked) | 8 | 6 | 2 | D-4, D-5 | Run 06 |
+| TC-3 | Card payment with Stripe (mocked) | 8 | 7 | 1 | D-4 (fixed), D-5 | Run 07 |
 | TC-4 | Access control (who can open which page) | - | - | - | - | Not written yet |
 | TC-5 | Regression (all tests again after each fix) | - | - | - | - | Not run yet |
 | TC-6 | Performance (Locust) | - | - | - | - | Not run yet |
@@ -48,6 +48,7 @@ I only save a log when the result changes (new tests, a defect found, or a defec
 | 04 | 13 Oct 2026 | Branch `test/tc2-stock` + D-2 fix | Quantity must be a whole number of at least 1; added TC-2.3 "abc" | 16 passed, 1 failed (TC-2.5, D-3) | `run-04.txt` |
 | 05 | 13 Oct 2026 | Branch `test/tc2-stock` + D-3 fix | Cart checkout checks every item first, then orders inside `transaction.atomic` | 17 passed | `run-05.txt` |
 | 06 | 13 Oct 2026 | Branch `test/tc3-payment`, app code not changed | Added TC-3 | 23 passed, 2 failed | `run-06.txt` |
+| 07 | 13 Oct 2026 | Branch `test/tc3-payment` + D-4 fix | Cart sends the price of one item to Stripe | 24 passed, 1 failed (TC-3.5, D-5) | `run-07.txt` |
 
 Command (PowerShell 7): `pytest -v > docs\evidence\tests\run-NN.txt`
 
@@ -126,16 +127,16 @@ How I chose the test data:
 
 File: `tests/test_tc3_payment.py`
 
-| ID | Test | Data | Expected | Actual (run 06) | Run 06 |
-|---|---|---|---|---|---|
-| TC-3.1 | Buy Now by card sends the exact amount | 19.99 x 1 | 1999 cents | 1999 | Pass |
-| | | 1.10 x 1 | 110 cents | 110 | Pass |
-| | | 0.29 x 1 | 29 cents | 29 | Pass |
-| | | 19.99 x 2 | 1999 per item, 3998 total | as expected | Pass |
-| TC-3.2 | Cart payment charges each item once | 1 x 12.50 + 2 x 5.01 | 2252 cents | 3254 cents | Fail (D-4) |
-| TC-3.3 | Stripe error does not create a payment | Stripe raises an error | back to home page, no Payment saved | as expected | Pass |
-| TC-3.4 | Payment done marks the payment as paid | back from Stripe | Payment status = paid | as expected | Pass |
-| TC-3.5 | Order page shows the card payment status | Stripe says "paid" | page opens and shows "paid" | page crashes (AttributeError) | Fail (D-5) |
+| ID | Test | Data | Expected | Actual (run 06) | Run 06 | Run 07 |
+|---|---|---|---|---|---|---|
+| TC-3.1 | Buy Now by card sends the exact amount | 19.99 x 1 | 1999 cents | 1999 | Pass | Pass |
+| | | 1.10 x 1 | 110 cents | 110 | Pass | Pass |
+| | | 0.29 x 1 | 29 cents | 29 | Pass | Pass |
+| | | 19.99 x 2 | 1999 per item, 3998 total | as expected | Pass | Pass |
+| TC-3.2 | Cart payment charges each item once | 1 x 12.50 + 2 x 5.01 | 2252 cents | 3254 cents | Fail (D-4) | Pass |
+| TC-3.3 | Stripe error does not create a payment | Stripe raises an error | back to home page, no Payment saved | as expected | Pass | Pass |
+| TC-3.4 | Payment done marks the payment as paid | back from Stripe | Payment status = paid | as expected | Pass | Pass |
+| TC-3.5 | Order page shows the card payment status | Stripe says "paid" | page opens and shows "paid" | page crashes (AttributeError) | Fail (D-5) | Fail (D-5) |
 
 Notes:
 - TC-3.1 confirms that F-9 is gone: with `Decimal`, `int(Decimal("19.99") * 100)` is 1999. With float it would be 1998 (and 0.29 would be 28). The D-1 fix also fixed F-9.
@@ -197,7 +198,7 @@ The current code does neither: it orders part of the cart but tells the customer
 
 | Status | Severity | Found by | Issue | Fix | Re-test |
 |---|---|---|---|---|---|
-| Open | High | TC-3.2 in run 06 | [#] | [commit] | [run 07] |
+| Verified | High | TC-3.2 in run 06 | [#8](https://github.coventry.ac.uk/kamolpanus/7020SCN_Ecomm/issues/8) | Send the product price as `unit_amount` | Run 07: TC-3.2 passes |
 
 **What happens:** the cart has 1 lamp ($12.50) and 2 mugs ($5.01). Stripe is asked to charge $32.54, not $22.52.
 
@@ -205,13 +206,13 @@ The current code does neither: it orders part of the cart but tells the customer
 
 **Cause:** `create_checkout_session_cart` (`orders/utiles/__init__.py` line 43) sends the order **total** (`total_amount`, already price x quantity) as the price of **one** item, and then also sends the quantity. Stripe multiplies again: 10.02 x 2 = 20.04 for the mugs.
 
-**Plan to fix:** send the product price as `unit_amount` (as Buy Now does), and keep the quantity.
+**Fix:** `unit_amount` is now `product.price` (the price of one item), as Buy Now does. Stripe multiplies it by the quantity.
 
 ### D-5 Order page crashes for card orders
 
 | Status | Severity | Found by | Issue | Fix | Re-test |
 |---|---|---|---|---|---|
-| Open | Medium | TC-3.5 in run 06 | [#] | [commit] | [run 07] |
+| Open | Medium | TC-3.5 in run 06 | [#9](https://github.coventry.ac.uk/kamolpanus/7020SCN_Ecomm/issues/9) | [commit] | [run 08] |
 
 **What happens:** a customer who paid by card opens their order page, and the page crashes (server error 500).
 
@@ -220,6 +221,8 @@ The current code does neither: it orders part of the cart but tells the customer
 **Cause:** `check_payment_status` (`orders/utiles/__init__.py` line 64) calls `stripe.stripe.checkout.Session.retrieve`. The word `stripe` is written twice. The `stripe` library has no `stripe` inside it, so Python raises `AttributeError`. I found this while reading the code to write TC-3.5.
 
 **Plan to fix:** call `stripe.checkout.Session.retrieve`.
+
+**Why nobody saw D-4 and D-5 before:** the repository had no tests, and the settings only have placeholder Stripe keys, so this payment code was probably never run. At baseline, coverage of `orders/utiles` was 23%.
 
 ## 6. Findings not yet confirmed
 
