@@ -1,0 +1,143 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.3, pytest-9.1.1, pluggy-1.6.0 -- C:\dev\Ecomm\7020SCN_Ecomm\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.10, settings: ecomm.settings (from ini)
+rootdir: C:\dev\Ecomm\7020SCN_Ecomm
+configfile: pytest.ini
+testpaths: tests
+plugins: cov-7.1.0, django-4.14.0
+collecting ... collected 16 items
+
+tests/test_smoke.py::test_home_page_loads_for_a_visitor PASSED           [  6%]
+tests/test_tc1_totals.py::test_tc1_1_order_total_with_whole_price PASSED [ 12%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[19.99x1] PASSED [ 18%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[19.99x2] PASSED [ 25%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[19.99x3] PASSED [ 31%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[1.10x3] PASSED [ 37%]
+tests/test_tc1_totals.py::test_tc1_3_cart_page_shows_exact_subtotal PASSED [ 43%]
+tests/test_tc1_totals.py::test_tc1_4_cart_order_total_adds_all_orders PASSED [ 50%]
+tests/test_tc2_stock.py::test_tc2_1_buy_now_reduces_stock_and_creates_order PASSED [ 56%]
+tests/test_tc2_stock.py::test_tc2_2_buy_now_stock_boundaries[qty1] PASSED [ 62%]
+tests/test_tc2_stock.py::test_tc2_2_buy_now_stock_boundaries[qty5=stock] PASSED [ 68%]
+tests/test_tc2_stock.py::test_tc2_2_buy_now_stock_boundaries[qty6=stock+1] PASSED [ 75%]
+tests/test_tc2_stock.py::test_tc2_3_buy_now_rejects_zero_or_negative_quantity[qty0] FAILED [ 81%]
+tests/test_tc2_stock.py::test_tc2_3_buy_now_rejects_zero_or_negative_quantity[qty-1] FAILED [ 87%]
+tests/test_tc2_stock.py::test_tc2_4_cart_checkout_orders_every_item PASSED [ 93%]
+tests/test_tc2_stock.py::test_tc2_5_cart_checkout_orders_nothing_if_one_item_is_short FAILED [100%]
+
+================================== FAILURES ===================================
+_________ test_tc2_3_buy_now_rejects_zero_or_negative_quantity[qty0] __________
+
+client = <django.test.client.Client object at 0x0000013719F78730>
+customer = <User: customer>, address = <Addresses: Test Customer>
+make_product = <function make_product.<locals>._make_product at 0x000001371A503CE0>
+quantity = 0
+
+    @pytest.mark.parametrize("quantity", [0, -1], ids=["qty0", "qty-1"])
+    def test_tc2_3_buy_now_rejects_zero_or_negative_quantity(
+        client, customer, address, make_product, quantity
+    ):
+        """TC-2.3: a quantity of 0 or less is rejected and stock does not change."""
+        # Arrange: 5 lamps in stock.
+        lamp = make_product("Lamp", Decimal("12.50"), in_stock=5)
+        client.force_login(customer)
+    
+        # Act: send an invalid quantity (EP: invalid partition, below 1).
+        buy_now(client, lamp, address, quantity)
+    
+        # Assert: no order, and stock is still 5.
+        # With -1, a wrong result would be stock 6 and a total of -12.50.
+        # The text after the comma is the message pytest shows if the check fails.
+        lamp.refresh_from_db()
+        order = Orders.objects.filter(user=customer).first()
+>       assert order is None, (
+            f"An order was created: quantity {order.quantity}, "
+            f"total {order.total_amount}, stock now {lamp.in_stock}"
+        )
+E       AssertionError: An order was created: quantity 0, total 0.00, stock now 5
+E       assert <Orders: customer@test.com> is None
+
+tests\test_tc2_stock.py:108: AssertionError
+_________ test_tc2_3_buy_now_rejects_zero_or_negative_quantity[qty-1] _________
+
+client = <django.test.client.Client object at 0x000001371A497B10>
+customer = <User: customer>, address = <Addresses: Test Customer>
+make_product = <function make_product.<locals>._make_product at 0x000001371A173100>
+quantity = -1
+
+    @pytest.mark.parametrize("quantity", [0, -1], ids=["qty0", "qty-1"])
+    def test_tc2_3_buy_now_rejects_zero_or_negative_quantity(
+        client, customer, address, make_product, quantity
+    ):
+        """TC-2.3: a quantity of 0 or less is rejected and stock does not change."""
+        # Arrange: 5 lamps in stock.
+        lamp = make_product("Lamp", Decimal("12.50"), in_stock=5)
+        client.force_login(customer)
+    
+        # Act: send an invalid quantity (EP: invalid partition, below 1).
+        buy_now(client, lamp, address, quantity)
+    
+        # Assert: no order, and stock is still 5.
+        # With -1, a wrong result would be stock 6 and a total of -12.50.
+        # The text after the comma is the message pytest shows if the check fails.
+        lamp.refresh_from_db()
+        order = Orders.objects.filter(user=customer).first()
+>       assert order is None, (
+            f"An order was created: quantity {order.quantity}, "
+            f"total {order.total_amount}, stock now {lamp.in_stock}"
+        )
+E       AssertionError: An order was created: quantity -1, total -12.50, stock now 6
+E       assert <Orders: customer@test.com> is None
+
+tests\test_tc2_stock.py:108: AssertionError
+________ test_tc2_5_cart_checkout_orders_nothing_if_one_item_is_short _________
+
+client = <django.test.client.Client object at 0x000001371A50D6D0>
+customer = <User: customer>, address = <Addresses: Test Customer>
+make_product = <function make_product.<locals>._make_product at 0x000001371A50FB00>
+
+    def test_tc2_5_cart_checkout_orders_nothing_if_one_item_is_short(
+        client, customer, address, make_product
+    ):
+        """TC-2.5: if one cart item is short of stock, nothing is ordered."""
+        # Arrange: 1 lamp (5 in stock) and 3 mugs (only 2 in stock) in the cart.
+        lamp = make_product("Lamp", Decimal("12.50"), in_stock=5)
+        mug = make_product("Mug", Decimal("5.01"), in_stock=2)
+        client.force_login(customer)
+        add_to_cart(client, lamp)
+        add_to_cart(client, mug, times=3)
+    
+        # Act: try to check out.
+        client.post(
+            reverse("cart_checkout"), {"payment_method": COD, "savedAddresses": address.id}
+        )
+    
+        # Assert: no orders of any kind, and both stocks are unchanged.
+        lamp.refresh_from_db()
+        mug.refresh_from_db()
+        orders = Orders.objects.filter(user=customer).count()
+        cart_orders = CartInOrder.objects.filter(user=customer).count()
+>       assert (orders, cart_orders) == (0, 0), (
+            f"{orders} order(s) and {cart_orders} cart order(s) were created; "
+            f"lamp stock is {lamp.in_stock}, mug stock is {mug.in_stock}"
+        )
+E       AssertionError: 1 order(s) and 1 cart order(s) were created; lamp stock is 4, mug stock is 2
+E       assert (1, 1) == (0, 0)
+E         
+E         At index 0 diff: 1 != 0
+E         
+E         Full diff:
+E           (
+E         -     0,
+E         ?     ^...
+E         
+E         ...Full output truncated (7 lines hidden), use '-vv' to show
+
+tests\test_tc2_stock.py:171: AssertionError
+-------------------------- Captured stderr teardown ---------------------------
+Destroying test database for alias 'default'...
+=========================== short test summary info ===========================
+FAILED tests/test_tc2_stock.py::test_tc2_3_buy_now_rejects_zero_or_negative_quantity[qty0]
+FAILED tests/test_tc2_stock.py::test_tc2_3_buy_now_rejects_zero_or_negative_quantity[qty-1]
+FAILED tests/test_tc2_stock.py::test_tc2_5_cart_checkout_orders_nothing_if_one_item_is_short
+======================== 3 failed, 13 passed in 19.65s ========================

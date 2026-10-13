@@ -12,7 +12,7 @@ and the problems I found. I add to this file each time I write or run tests.
 | Group | What it checks | Tests | Pass | Fail | Defects | Status |
 |---|---|---|---|---|---|---|
 | TC-1 | Order and cart totals | 7 | 7 | 0 | D-1 (fixed) | Run 02 |
-| TC-2 | Stock and order status after checkout | - | - | - | - | Not written yet |
+| TC-2 | Stock after checkout | 8 | 5 | 3 | D-2, D-3 | Run 03 |
 | TC-3 | Payment with Stripe (mocked) | - | - | - | - | Not written yet |
 | TC-4 | Access control (who can open which page) | - | - | - | - | Not written yet |
 | TC-5 | Regression (all tests again after each fix) | - | - | - | - | Not run yet |
@@ -28,11 +28,12 @@ The smoke test (`tests/test_smoke.py`) only checks that pytest is set up, so it 
 | Defect (D) | A real bug. A test failed, and I checked that the test itself is correct. |
 | Finding (F) | Something that looks wrong (from a tool or from reading the code). No test has proved it yet. |
 | Run | One time I run the whole test suite and save the log. |
+| Failure vs defect | A failing test is a symptom. A defect is the cause in the code. Several failures can have one cause (one defect). |
 
 | Status of | Values |
 |---|---|
 | Test | Pass, Fail, Not run yet |
-| Defect | Open → Fixed (code changed) → Verified (test passes again) → Closed |
+| Defect | Open → Fixed (code changed) → Verified (test passes again) → Closed (Issue closed) |
 | Severity | High (wrong money, data loss, security), Medium (wrong result the user can see), Low (cosmetic) |
 
 ## 3. Test runs
@@ -43,6 +44,7 @@ I only save a log when the result changes (new tests, a defect found, or a defec
 |---|---|---|---|---|---|
 | 01 | 12 Oct 2026 | `main` (`10fa58f`) + new TC-1 tests, app code not changed | Added TC-1 | 5 passed, 3 failed | `run-01.txt` |
 | 02 | 13 Oct 2026 | Branch `test/tc1-totals` + D-1 fix | Money fields changed to `DecimalField`; tests use `Decimal` | 8 passed | `run-02.txt` |
+| 03 | 13 Oct 2026 | Branch `test/tc2-stock`, app code not changed | Added TC-2 | 13 passed, 3 failed | `run-03.txt` |
 
 Command (PowerShell 7): `pytest -v > docs\evidence\tests\run-NN.txt`
 
@@ -74,13 +76,45 @@ Notes:
 - Since run 02, prices are written as `Decimal("19.99")`, the type the app now uses. The expected values did not change.
 - TC-1.1 and TC-1.2 read the order back from the database (`refresh_from_db()`), so they check the saved value.
 
+### TC-2 Stock after checkout
+
+Why: if stock goes wrong, the shop sells items it does not have, or stock grows when nothing was returned.
+
+Rules I test:
+- A customer can buy up to the number in stock, not more.
+- After checkout, stock goes down by the quantity bought.
+- If one item in a cart cannot be bought, nothing in that cart is ordered (**design A**, see D-3).
+
+How I chose the test data (5 in stock):
+- Boundary value analysis: quantity 1 (lowest valid), 5 (= stock), 6 (= stock + 1)
+- Equivalence partitioning: invalid quantities 0 and -1. The form has no quantity box, but the server reads `quantity` from the request (`orders/views.py` line 274), so anyone can send any value.
+
+All tests use "Cash On Delivery", so no Stripe call is made (Stripe is TC-3).
+
+File: `tests/test_tc2_stock.py`
+
+| ID | Test | Data | Expected | Actual (run 03) | Run 03 |
+|---|---|---|---|---|---|
+| TC-2.1 | Buy Now creates an order and reduces stock | buy 2 | stock 3; order qty 2, total 25.00, Pending | as expected | Pass |
+| TC-2.2 | Buy Now stock boundaries | buy 1 | accepted, stock 4 | as expected | Pass |
+| | | buy 5 | accepted, stock 0 | as expected | Pass |
+| | | buy 6 | rejected, stock 5 | as expected | Pass |
+| TC-2.3 | Buy Now rejects 0 or less | buy 0 | rejected, stock 5 | order with qty 0, total 0.00 | Fail (D-2) |
+| | | buy -1 | rejected, stock 5 | order with qty -1, total -12.50, stock 6 | Fail (D-2) |
+| TC-2.4 | Cart checkout orders every item | 1 lamp + 2 mugs | 2 orders, stock 4 and 3, total 22.52, cart empty | as expected | Pass |
+| TC-2.5 | Cart checkout orders nothing if one item is short | 1 lamp (5 in stock) + 3 mugs (2 in stock) | no orders, stock 5 and 2 | 1 order + 1 cart order, lamp stock 4 | Fail (D-3) |
+
+Notes:
+- TC-2 tests use the Django test client and log in with `force_login()`, so they test the views, not only the models.
+- Three tests failed, but they have two different causes in two places in the code, so they are two defects (D-2, D-3).
+
 ## 5. Defects
 
 ### D-1 Money totals are not exact
 
 | Status | Severity | Found by | Issue | Fix | Re-test |
 |---|---|---|---|---|---|
-| Verified | Medium | TC-1.2 (1.10 x 3), TC-1.3, TC-1.4 in run 01 | [#3](https://github.coventry.ac.uk/kamolpanus/7020SCN_Ecomm/issues/3) | `DecimalField` + migrations `0003` | Run 02: all pass |
+| Closed | Medium | TC-1.2 (1.10 x 3), TC-1.3, TC-1.4 in run 01 | [#3](https://github.coventry.ac.uk/kamolpanus/7020SCN_Ecomm/issues/3) | `DecimalField` + migrations `0003` | Run 02: all pass |
 
 **What happens:** with 1 x $19.99 and 2 x $5.01 in the cart, `/cart/` shows `$30.009999999999998`, not `$30.01`.
 
@@ -88,7 +122,41 @@ Notes:
 
 **Cause:** money is stored as `FloatField` (`Products.price`, `variants.extra_price`, `Orders.total_amount`, `CartInOrder.total`). Floats cannot store values like 1.10 exactly.
 
-**Fix:** the four fields are now `DecimalField` (2 decimal places), with migrations `products/0003` and `orders/0003`. Status becomes Closed when the PR is merged.
+**Fix:** the four fields are now `DecimalField` (2 decimal places), with migrations `products/0003` and `orders/0003`. Closed when the PR was merged.
+
+### D-2 Buy Now accepts a quantity of 0 or less
+
+| Status | Severity | Found by | Issue | Fix | Re-test |
+|---|---|---|---|---|---|
+| Open | High | TC-2.3 (0 and -1) in run 03 | [#] | [commit] | [run 04] |
+
+**What happens:** with quantity -1, an order is made with a total of -12.50, and stock goes **up** from 5 to 6. Quantity 0 makes an empty order.
+
+**Is my test wrong?** No. TC-2.1 and TC-2.2 pass with the same set-up, and an order of 0 or fewer items makes no sense.
+
+**Cause:** `CheckoutView.post` (`orders/views.py` line 275) only checks that the quantity is not more than the stock. It never checks that the quantity is at least 1. Then line 299 does `in_stock -= qty`, so 5 - (-1) = 6.
+
+**Plan to fix:** reject a quantity below 1 (and a value that is not a number), with a message, before any order is made.
+
+### D-3 Cart checkout orders some items when another item is short
+
+| Status | Severity | Found by | Issue | Fix | Re-test |
+|---|---|---|---|---|---|
+| Open | Medium | TC-2.5 in run 03 | [#] | [commit] | [run 04] |
+
+**What happens:** the cart has 1 lamp and 3 mugs, but only 2 mugs are in stock. The customer sees "Not enough stock", but the lamp order is already made and its stock is already 4. The cart order is not finished (`place()` is not called) and the cart is not cleared, so trying again orders the lamp a second time.
+
+**Is my test wrong?** No. TC-2.4 (same steps, enough stock) passes.
+
+**Cause:** `CartCheckoutView.post` (`orders/views.py` lines 204-227) makes the cart order first, then makes each order and reduces its stock inside the loop. When an item is short, it returns at once and does not undo the earlier work.
+
+**Two possible designs** (the repository has no written requirement, so this is my assumption):
+- **A. All or nothing:** check the stock of every item first; if one is short, order nothing and tell the customer.
+- **B. Send what is available:** order only the items in stock, tell the customer exactly what was ordered, charge only for those, and finish the order.
+
+The current code does neither: it orders part of the cart but tells the customer that nothing was ordered.
+
+**Plan to fix (design A):** check the stock of every item before making any order, and wrap the checkout in `transaction.atomic`, so the database undoes everything if something fails. I chose A because the code already shows "Not enough stock" and stops (it only forgot to undo), the change is smaller, and the Stripe payment is for the whole cart.
 
 ## 6. Findings not yet confirmed
 
