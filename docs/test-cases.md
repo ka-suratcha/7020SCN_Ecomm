@@ -12,7 +12,7 @@ and the problems I found. I add to this file each time I write or run tests.
 | Group | What it checks | Tests | Pass | Fail | Defects | Status |
 |---|---|---|---|---|---|---|
 | TC-1 | Order and cart totals | 7 | 7 | 0 | D-1 (fixed) | Run 02 |
-| TC-2 | Stock after checkout | 9 | 8 | 1 | D-2 (fixed), D-3 | Run 04 |
+| TC-2 | Stock after checkout | 9 | 9 | 0 | D-2, D-3 (fixed) | Run 05 |
 | TC-3 | Payment with Stripe (mocked) | - | - | - | - | Not written yet |
 | TC-4 | Access control (who can open which page) | - | - | - | - | Not written yet |
 | TC-5 | Regression (all tests again after each fix) | - | - | - | - | Not run yet |
@@ -46,6 +46,7 @@ I only save a log when the result changes (new tests, a defect found, or a defec
 | 02 | 13 Oct 2026 | Branch `test/tc1-totals` + D-1 fix | Money fields changed to `DecimalField`; tests use `Decimal` | 8 passed | `run-02.txt` |
 | 03 | 13 Oct 2026 | Branch `test/tc2-stock`, app code not changed | Added TC-2 | 13 passed, 3 failed | `run-03.txt` |
 | 04 | 13 Oct 2026 | Branch `test/tc2-stock` + D-2 fix | Quantity must be a whole number of at least 1; added TC-2.3 "abc" | 16 passed, 1 failed (TC-2.5, D-3) | `run-04.txt` |
+| 05 | 13 Oct 2026 | Branch `test/tc2-stock` + D-3 fix | Cart checkout checks every item first, then orders inside `transaction.atomic` | 17 passed | `run-05.txt` |
 
 Command (PowerShell 7): `pytest -v > docs\evidence\tests\run-NN.txt`
 
@@ -94,17 +95,17 @@ All tests use "Cash On Delivery", so no Stripe call is made (Stripe is TC-3).
 
 File: `tests/test_tc2_stock.py`
 
-| ID | Test | Data | Expected | Actual (run 03) | Run 03 | Run 04 |
-|---|---|---|---|---|---|---|
-| TC-2.1 | Buy Now creates an order and reduces stock | buy 2 | stock 3; order qty 2, total 25.00, Pending | as expected | Pass | Pass |
-| TC-2.2 | Buy Now stock boundaries | buy 1 | accepted, stock 4 | as expected | Pass | Pass |
-| | | buy 5 | accepted, stock 0 | as expected | Pass | Pass |
-| | | buy 6 | rejected, stock 5 | as expected | Pass | Pass |
-| TC-2.3 | Buy Now rejects 0 or less | buy 0 | rejected, stock 5 | order with qty 0, total 0.00 | Fail (D-2) | Pass |
-| | | buy -1 | rejected, stock 5 | order with qty -1, total -12.50, stock 6 | Fail (D-2) | Pass |
-| | | buy "abc" | rejected, stock 5 | (added in run 04) | - | Pass |
-| TC-2.4 | Cart checkout orders every item | 1 lamp + 2 mugs | 2 orders, stock 4 and 3, total 22.52, cart empty | as expected | Pass | Pass |
-| TC-2.5 | Cart checkout orders nothing if one item is short | 1 lamp (5 in stock) + 3 mugs (2 in stock) | no orders, stock 5 and 2 | 1 order + 1 cart order, lamp stock 4 | Fail (D-3) | Fail (D-3) |
+| ID | Test | Data | Expected | Actual (run 03) | Run 03 | Run 04 | Run 05 |
+|---|---|---|---|---|---|---|---|
+| TC-2.1 | Buy Now creates an order and reduces stock | buy 2 | stock 3; order qty 2, total 25.00, Pending | as expected | Pass | Pass | Pass |
+| TC-2.2 | Buy Now stock boundaries | buy 1 | accepted, stock 4 | as expected | Pass | Pass | Pass |
+| | | buy 5 | accepted, stock 0 | as expected | Pass | Pass | Pass |
+| | | buy 6 | rejected, stock 5 | as expected | Pass | Pass | Pass |
+| TC-2.3 | Buy Now rejects an invalid quantity | buy 0 | rejected, stock 5 | order with qty 0, total 0.00 | Fail (D-2) | Pass | Pass |
+| | | buy -1 | rejected, stock 5 | order with qty -1, total -12.50, stock 6 | Fail (D-2) | Pass | Pass |
+| | | buy "abc" | rejected, stock 5 | (added in run 04) | - | Pass | Pass |
+| TC-2.4 | Cart checkout orders every item | 1 lamp + 2 mugs | 2 orders, stock 4 and 3, total 22.52, cart empty | as expected | Pass | Pass | Pass |
+| TC-2.5 | Cart checkout orders nothing if one item is short | 1 lamp (5 in stock) + 3 mugs (2 in stock) | no orders, stock 5 and 2 | 1 order + 1 cart order, lamp stock 4 | Fail (D-3) | Fail (D-3) | Pass |
 
 Notes:
 - TC-2 tests use the Django test client and log in with `force_login()`, so they test the views, not only the models.
@@ -145,7 +146,7 @@ Notes:
 
 | Status | Severity | Found by | Issue | Fix | Re-test |
 |---|---|---|---|---|---|
-| Open | Medium | TC-2.5 in run 03 | [#6](https://github.coventry.ac.uk/kamolpanus/7020SCN_Ecomm/issues/6) | [commit] | [run 05] |
+| Verified | Medium | TC-2.5 in run 03 | [#6](https://github.coventry.ac.uk/kamolpanus/7020SCN_Ecomm/issues/6) | Check all items first + `transaction.atomic` | Run 05: TC-2.5 passes |
 
 **What happens:** the cart has 1 lamp and 3 mugs, but only 2 mugs are in stock. The customer sees "Not enough stock", but the lamp order is already made and its stock is already 4. The cart order is not finished (`place()` is not called) and the cart is not cleared, so trying again orders the lamp a second time.
 
@@ -159,7 +160,9 @@ Notes:
 
 The current code does neither: it orders part of the cart but tells the customer that nothing was ordered.
 
-**Plan to fix (design A):** check the stock of every item before making any order, and wrap the checkout in `transaction.atomic`, so the database undoes everything if something fails. I chose A because the code already shows "Not enough stock" and stops (it only forgot to undo), the change is smaller, and the Stripe payment is for the whole cart.
+**Fix (design A):** `CartCheckoutView.post` now works in two steps. Step 1 checks every item (own product, stock) and stops before anything is saved. Step 2 makes the cart order, the orders and the stock changes inside `transaction.atomic`, so the database undoes all of them if something fails. I chose A because the code already shows "Not enough stock" and stops (it only forgot to undo), the change is smaller, and the Stripe payment is for the whole cart.
+
+**Not covered (limitation):** two customers who buy the last item at the same moment. This needs a database lock (for example `select_for_update`) and a test that runs two requests at once. I did not test it.
 
 ## 6. Findings not yet confirmed
 
