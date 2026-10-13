@@ -52,7 +52,7 @@ def make_product(shop, category):
 
     A normal fixture gives one fixed object.
     A factory fixture lets one test create many products with different prices.
-    Example: make_product("Pen", 1.10) creates a product called "Pen" at 1.10.
+    Example: make_product("Pen", Decimal("1.10")) creates "Pen" at 1.10.
     The name must be different for each product, because the slug
     (the name in the URL, made from the name) must be unique.
     """

@@ -15,7 +15,10 @@ class Orders(models.Model):
         ),
         default="Cash On Delivery",
     )
-    total_amount = models.FloatField(null=True, blank=True)
+    # Decimal, so price * quantity is saved exactly (Issue #3).
+    total_amount = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True
+    )
     address = models.ForeignKey("users.Addresses", on_delete=models.CASCADE)
     
     status_choice = (
@@ -48,7 +51,10 @@ class Payment(models.Model):
 class CartInOrder(models.Model):
     user = models.ForeignKey("users.User", on_delete=models.CASCADE)
     orders_in = models.ManyToManyField("orders.Orders")
-    total = models.FloatField(null=True, blank=True)
+    # Decimal, so the sum of the order totals is exact (Issue #3).
+    total = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True
+    )
 
     def __str__(self):
         return self.user.email
