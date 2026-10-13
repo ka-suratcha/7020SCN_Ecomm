@@ -21,7 +21,10 @@ class Category(models.Model):
 
 class variants(models.Model):
     name = models.CharField(max_length=100)
-    extra_price = models.FloatField(null=True, blank=True)
+    # Decimal, the same as price, because it is also money (Issue #3).
+    extra_price = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
     owner = models.ForeignKey(User, on_delete=models.CASCADE, default=1)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -33,7 +36,8 @@ class variants(models.Model):
 class Products(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField()
-    price = models.FloatField()
+    # Decimal, not float: money must be exact to the penny (Issue #3).
+    price = models.DecimalField(max_digits=10, decimal_places=2)
     in_stock = models.IntegerField()
     variants = models.ManyToManyField(variants)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, default=1)
