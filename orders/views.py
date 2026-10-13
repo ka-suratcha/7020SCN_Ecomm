@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from products import models as product_models
 from users import models as user_models
 from django.contrib import messages
+from django.db import transaction
 from django.http import HttpResponseRedirect
 from django.views import View
 from . import models as order_models
@@ -192,41 +193,54 @@ class CartCheckoutView(View):
             messages.info(request, "Please Select Address", "alert-danger")
             return HttpResponseRedirect(f"/checkout/")
 
-        products = product_models.Products.objects.filter(
-            slug__in=request.session.get("cart", {}).keys()
+        # list(): read the products once, so both loops below use the same objects.
+        products = list(
+            product_models.Products.objects.filter(
+                slug__in=request.session.get("cart", {}).keys()
+            )
         )
 
         if not products:
             messages.info(request, "Cart is empty", "alert-danger")
             return HttpResponseRedirect(f"/")
-        
 
-        inOrder = order_models.CartInOrder.objects.create(
-            user=request.user,
-        )
+        cart = request.session["cart"]
 
+        # Step 1: check every item before making any order (Issue #6).
+        # - One cart is one purchase: all items are ordered, or none ("all or nothing").
+        # - If one item fails a check, we stop here, before anything is saved,
+        #   so there is nothing to undo.
         for product in products:
             if product.shop.user == request.user:
                 messages.info(request, "You can't order your own product", "alert-danger")
                 return HttpResponseRedirect(f"/")
 
-            if product.in_stock < request.session["cart"][product.slug]["quantity"]:
+            if product.in_stock < cart[product.slug]["quantity"]:
                 messages.error(request, f"Not enough stock for {product.name}", "alert-danger")
                 return HttpResponseRedirect(f"/")
 
-            order = order_models.Orders.objects.create(
+        # Step 2: all checks passed, so make the orders and reduce the stock.
+        # transaction.atomic(): if anything fails inside this block,
+        # the database undoes every change made in it (Issue #6).
+        with transaction.atomic():
+            inOrder = order_models.CartInOrder.objects.create(
                 user=request.user,
-                address=savedAddresses,
-                payment_method=payment_method,
-                product=product,
-                quantity=request.session["cart"][product.slug]["quantity"],
             )
-            inOrder.orders_in.add(order)
-            order.save()
-            product.in_stock -= request.session["cart"][product.slug].get("quantity", 1)
-            product.save()
 
-        inOrder.place()
+            for product in products:
+                quantity = cart[product.slug]["quantity"]
+                order = order_models.Orders.objects.create(
+                    user=request.user,
+                    address=savedAddresses,
+                    payment_method=payment_method,
+                    product=product,
+                    quantity=quantity,
+                )
+                inOrder.orders_in.add(order)
+                product.in_stock -= quantity
+                product.save()
+
+            inOrder.place()
 
         del request.session["cart"]
 
@@ -271,7 +285,22 @@ class CheckoutView(View):
             return HttpResponseRedirect("/")
         
 
-        qty = int(request.POST.get("quantity", 1))
+        # Check the quantity before any order is made (Issue #5).
+        # - It comes from the request, so anyone can send any value,
+        #   even without the form (for example 0, -1 or "abc").
+        # - int("abc") gives an error. We set qty to 0 instead,
+        #   so the check below rejects it with a message.
+        #   Without this, the page would crash (server error 500).
+        # - Two limits: at least 1 (checked here),
+        #   and not more than the stock (checked after this).
+        try:
+            qty = int(request.POST.get("quantity", 1))
+        except (TypeError, ValueError):
+            qty = 0
+        if qty < 1:
+            messages.info(request, "Quantity must be at least 1", "alert-danger")
+            return HttpResponseRedirect("/")
+
         if product.in_stock < qty:
             messages.info(request, "Not enough stock", "alert-danger")
             return HttpResponseRedirect("/")
