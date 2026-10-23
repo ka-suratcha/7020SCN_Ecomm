@@ -15,7 +15,14 @@ def ViewOrder(request, order_id):
         return HttpResponseRedirect("/")
 
     if not order.payment_method == "Cash On Delivery":
-        payment_status = utiles.check_payment_status(order.payment_ref.payment_id)
+        # D-7 (Issue #12): use None when there is no Payment, so the page opens.
+        # - payment_ref is empty (None) when Stripe failed on the payment page.
+        # - None has no payment_id, so the old line raised AttributeError (error 500).
+        # - "A if B else C" means: use A when B is true, otherwise use C.
+        payment_id = order.payment_ref.payment_id if order.payment_ref else None
+        # check_payment_status (orders/utiles) gives "Unpaid" for None,
+        # without calling Stripe.
+        payment_status = utiles.check_payment_status(payment_id)
         data = {"order": order, "payment_status": payment_status}
     else:
         data = {"order": order}
