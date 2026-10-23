@@ -418,6 +418,16 @@ def payment_done(request):
     if not payment_session:
         return HttpResponseRedirect("/")
 
+    # D-6 (Issue #11): ask Stripe if the customer really paid, before saving "paid".
+    # - check_payment_status (orders/utiles) asks Stripe about this session.
+    # - Stripe answers "paid" only when the money was taken.
+    # - Without this check, anyone who opens /payment_done/ gets a paid order.
+    if utiles.check_payment_status(payment_session) != "paid":
+        # Tell the customer that the payment did not go through (red message).
+        messages.info(request, "Payment not completed", "alert-danger")
+        # Stop here, so the Payment stays unpaid, and go back to the home page.
+        return HttpResponseRedirect("/")
+
     payModel = order_models.Payment.objects.filter(payment_id=payment_session)
 
     payModel.update(status=True)
