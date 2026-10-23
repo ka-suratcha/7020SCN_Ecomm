@@ -1,0 +1,244 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.3, pytest-9.1.1, pluggy-1.6.0 -- C:\dev\Ecomm\7020SCN_Ecomm\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.10, settings: ecomm.settings (from ini)
+rootdir: C:\dev\Ecomm\7020SCN_Ecomm
+configfile: pytest.ini
+testpaths: tests
+plugins: cov-7.1.0, django-4.14.0
+collecting ... collected 28 items
+
+tests/test_smoke.py::test_home_page_loads_for_a_visitor PASSED           [  3%]
+tests/test_tc1_totals.py::test_tc1_1_order_total_with_whole_price PASSED [  7%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[19.99x1] PASSED [ 10%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[19.99x2] PASSED [ 14%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[19.99x3] PASSED [ 17%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[1.10x3] PASSED [ 21%]
+tests/test_tc1_totals.py::test_tc1_3_cart_page_shows_exact_subtotal PASSED [ 25%]
+tests/test_tc1_totals.py::test_tc1_4_cart_order_total_adds_all_orders PASSED [ 28%]
+tests/test_tc2_stock.py::test_tc2_1_buy_now_reduces_stock_and_creates_order PASSED [ 32%]
+tests/test_tc2_stock.py::test_tc2_2_buy_now_stock_boundaries[qty1] PASSED [ 35%]
+tests/test_tc2_stock.py::test_tc2_2_buy_now_stock_boundaries[qty5=stock] PASSED [ 39%]
+tests/test_tc2_stock.py::test_tc2_2_buy_now_stock_boundaries[qty6=stock+1] PASSED [ 42%]
+tests/test_tc2_stock.py::test_tc2_3_buy_now_rejects_invalid_quantity[qty0] PASSED [ 46%]
+tests/test_tc2_stock.py::test_tc2_3_buy_now_rejects_invalid_quantity[qty-1] PASSED [ 50%]
+tests/test_tc2_stock.py::test_tc2_3_buy_now_rejects_invalid_quantity[qty-abc] PASSED [ 53%]
+tests/test_tc2_stock.py::test_tc2_4_cart_checkout_orders_every_item PASSED [ 57%]
+tests/test_tc2_stock.py::test_tc2_5_cart_checkout_orders_nothing_if_one_item_is_short PASSED [ 60%]
+tests/test_tc3_payment.py::test_tc3_1_buy_now_sends_exact_amount_to_stripe[19.99x1] PASSED [ 64%]
+tests/test_tc3_payment.py::test_tc3_1_buy_now_sends_exact_amount_to_stripe[1.10x1] PASSED [ 67%]
+tests/test_tc3_payment.py::test_tc3_1_buy_now_sends_exact_amount_to_stripe[0.29x1] PASSED [ 71%]
+tests/test_tc3_payment.py::test_tc3_1_buy_now_sends_exact_amount_to_stripe[19.99x2] PASSED [ 75%]
+tests/test_tc3_payment.py::test_tc3_2_cart_payment_charges_each_item_once PASSED [ 78%]
+tests/test_tc3_payment.py::test_tc3_3_stripe_error_does_not_create_payment PASSED [ 82%]
+tests/test_tc3_payment.py::test_tc3_4_payment_done_marks_payment_as_paid PASSED [ 85%]
+tests/test_tc3_payment.py::test_tc3_5_order_page_shows_card_payment_status PASSED [ 89%]
+tests/test_tc3_payment.py::test_tc3_6_payment_done_without_payment_is_not_paid FAILED [ 92%]
+tests/test_tc3_payment.py::test_tc3_7_order_page_after_stripe_error_opens FAILED [ 96%]
+tests/test_tc3_payment.py::test_tc3_8_cancelled_payment_cancels_order_and_returns_stock FAILED [100%]
+
+================================== FAILURES ===================================
+_____________ test_tc3_6_payment_done_without_payment_is_not_paid _____________
+
+client = <django.test.client.Client object at 0x0000022048B64910>
+customer = <User: customer>, address = <Addresses: Test Customer>
+make_product = <function make_product.<locals>._make_product at 0x0000022048B66160>
+
+    def test_tc3_6_payment_done_without_payment_is_not_paid(
+        client, customer, address, make_product
+    ):
+        """TC-3.6: if Stripe says "unpaid", the Payment is not marked as paid.
+    
+        Fixtures: client (pytest-django), customer, address, make_product (conftest.py).
+        """
+        # Arrange: make a card order and open its payment page.
+        # - card_order_with_payment is the helper above. It explains each step.
+        # - After it, a Payment with id "cs_test_123" exists and is not paid yet.
+        # - It also returns the order and the pen. This test does not need them,
+        #   so we do not keep them.
+        card_order_with_payment(client, customer, address, make_product)
+    
+        # Act, part 1: put a fake Stripe "get session" in place.
+        # - RETRIEVE (top of this file) is Stripe's "get this session" function.
+        # - The fake answers {"payment_status": "unpaid"}, so the customer did not pay.
+        # - A dict is enough, because Stripe's real answer works like a dict.
+        # - Why a fake: the real Stripe needs a secret key and the internet.
+        with mock.patch(RETRIEVE, return_value={"payment_status": "unpaid"}):
+            # Act, part 2: open the success page without paying.
+            # - "payment_done" is the url name in orders/urls.py (/payment_done/).
+            # - Anyone can type this url by hand, so the test does the same.
+            # - The view (payment_done, orders/views.py) should ask Stripe first.
+            #   Stripe says "unpaid", so the view must not mark the payment as paid.
+            client.get(reverse("payment_done"))
+    
+        # Read the Payment from the database again.
+        # - payment_id is the Stripe session id that the view saved (orders/models.py).
+        # - get() is safe here: the helper made exactly one Payment with this id.
+        payment = Payment.objects.get(payment_id=FAKE_SESSION.id)
+    
+        # Assert: the payment must still be unpaid.
+        # - status is a True or False field. True means paid (orders/models.py).
+        # - "is False" checks for the exact value False.
+        # - The text after the comma is the message pytest shows if the check fails.
+>       assert payment.status is False, "Marked as paid, but Stripe says unpaid"
+E       AssertionError: Marked as paid, but Stripe says unpaid
+E       assert True is False
+E        +  where True = <Payment: 1>.status
+
+tests\test_tc3_payment.py:277: AssertionError
+_______________ test_tc3_7_order_page_after_stripe_error_opens ________________
+
+client = <django.test.client.Client object at 0x0000022048B64B90>
+customer = <User: customer>, address = <Addresses: Test Customer>
+make_product = <function make_product.<locals>._make_product at 0x0000022048BBE340>
+
+    def test_tc3_7_order_page_after_stripe_error_opens(
+        client, customer, address, make_product
+    ):
+        """TC-3.7: if Stripe failed, the card order page still opens and shows Unpaid.
+    
+        Fixtures: client (pytest-django), customer, address, make_product (conftest.py).
+        The first steps match card_order_with_payment, which explains them in full.
+        """
+        # Arrange: a card order, then Stripe fails when the payment page opens.
+        # These are the helper's steps, except the last one,
+        # so this test cannot use the helper.
+    
+        # Create a "Pen" at 19.99 with 10 in stock (make_product, conftest.py).
+        pen = make_product("Pen", Decimal("19.99"))
+    
+        # Log in as the customer without a password (the helper explains why).
+        client.force_login(customer)
+    
+        # Press "Buy Now" for 1 pen, paid by card (the helper explains each field).
+        client.post(
+            reverse("checkout", args=[pen.slug]),
+            {"quantity": 1, "payment_method": CARD, "savedAddresses": address.id},
+        )
+    
+        # Read the customer's only order.
+        order = Orders.objects.get(user=customer)
+    
+        # Open the payment page, but make the fake Stripe raise an error.
+        # - side_effect=Exception(...) means "raise this error when called".
+        #   return_value would give an answer instead, as in the helper.
+        # - This acts like Stripe being down, as in TC-3.3.
+        # - The app catches the error, so no Payment is saved.
+        #   order.payment_ref stays None (empty).
+        with mock.patch(CREATE, side_effect=Exception("Stripe is not available")):
+            client.get(reverse("payment", args=[order.id]))
+    
+        # Act: the customer opens the order page later.
+        # - "order" is the url name in orders/urls.py (/order/<order_id>/).
+        # - The view is ViewOrder (orders/views.py). For a card order it reads
+        #   order.payment_ref.payment_id, so an empty payment_ref is the risk here.
+        # - No fake RETRIEVE is needed. With no session id, the app should not
+        #   call Stripe at all.
+        # - If the view crashes, the test client raises the error on this line,
+        #   so the test fails here.
+>       response = client.get(reverse("order", args=[order.id]))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_tc3_payment.py:324: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\django\test\client.py:1124: in get
+    response = super().get(
+.venv\Lib\site-packages\django\test\client.py:475: in get
+    return self.generic(
+.venv\Lib\site-packages\django\test\client.py:671: in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\django\test\client.py:1087: in request
+    self.check_exception(response)
+.venv\Lib\site-packages\django\test\client.py:802: in check_exception
+    raise exc_value
+.venv\Lib\site-packages\django\core\handlers\exception.py:55: in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\django\core\handlers\base.py:197: in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+request = <WSGIRequest: GET '/order/1/'>, order_id = 1
+
+    def ViewOrder(request, order_id):
+        order = get_object_or_404(order_models.Orders, id=order_id)
+        if not order.user == request.user:
+            return HttpResponseRedirect("/")
+    
+        if not order.payment_method == "Cash On Delivery":
+>           payment_status = utiles.check_payment_status(order.payment_ref.payment_id)
+                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'NoneType' object has no attribute 'payment_id'
+
+orders\views.py:18: AttributeError
+---------------------------- Captured stdout call -----------------------------
+An error occurred: Stripe is not available
+------------------------------ Captured log call ------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /order/1/
+Traceback (most recent call last):
+  File "C:\dev\Ecomm\7020SCN_Ecomm\.venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\dev\Ecomm\7020SCN_Ecomm\.venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\dev\Ecomm\7020SCN_Ecomm\orders\views.py", line 18, in ViewOrder
+    payment_status = utiles.check_payment_status(order.payment_ref.payment_id)
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'payment_id'
+________ test_tc3_8_cancelled_payment_cancels_order_and_returns_stock _________
+
+client = <django.test.client.Client object at 0x0000022048B65590>
+customer = <User: customer>, address = <Addresses: Test Customer>
+make_product = <function make_product.<locals>._make_product at 0x0000022048ABA840>
+
+    def test_tc3_8_cancelled_payment_cancels_order_and_returns_stock(
+        client, customer, address, make_product
+    ):
+        """TC-3.8: a payment cancelled on Stripe cancels the order and returns the stock.
+    
+        Design A (my assumption, as for D-3): a cancelled payment means no purchase,
+        so the order is cancelled and the item goes back into stock.
+    
+        Fixtures: client (pytest-django), customer, address, make_product (conftest.py).
+        """
+        # Arrange: a card order for 1 pen, with its payment page open.
+        # - The helper lowers the stock from 10 to 9 and saves a Payment.
+        # - It returns two values. We keep both: order (to find it again)
+        #   and pen (to check the stock).
+        order, pen = card_order_with_payment(client, customer, address, make_product)
+    
+        # Act: the customer presses "cancel" on the Stripe page.
+        # - Stripe then sends the browser to /payment_cancel/.
+        # - "payment_cancel" is the url name in orders/urls.py.
+        #   The view behind it is payment_canceled (orders/views.py).
+        # - No fake Stripe is needed, because this view does not call Stripe.
+        client.get(reverse("payment_cancel"))
+    
+        # Look for the order in the database again.
+        # - filter(...).first() gives the order, or None if it was deleted.
+        # - Not get(): if the row is gone, get() raises a long error
+        #   instead of our clear message below.
+        saved_order = Orders.objects.filter(id=order.id).first()
+    
+        # Read the pen again, because the view changed its stock in the database.
+        # Without this, pen.in_stock still shows the old value (9) from memory.
+        pen.refresh_from_db()
+    
+        # Assert: the order must still exist.
+        # - The risk: Orders.payment_ref uses on_delete=CASCADE (orders/models.py),
+        #   so deleting the Payment also deletes the order.
+        # - The message also shows the stock, to help find the cause.
+>       assert saved_order is not None, f"The order was deleted. Stock is {pen.in_stock}"
+E       AssertionError: The order was deleted. Stock is 9
+E       assert None is not None
+
+tests\test_tc3_payment.py:373: AssertionError
+-------------------------- Captured stderr teardown ---------------------------
+Destroying test database for alias 'default'...
+
+=========================== short test summary info ===========================
+FAILED tests/test_tc3_payment.py::test_tc3_6_payment_done_without_payment_is_not_paid
+FAILED tests/test_tc3_payment.py::test_tc3_7_order_page_after_stripe_error_opens
+FAILED tests/test_tc3_payment.py::test_tc3_8_cancelled_payment_cancels_order_and_returns_stock
+======================== 3 failed, 25 passed in 33.02s ========================
