@@ -450,7 +450,26 @@ def payment_canceled(request):
     if not payment_session:
         return HttpResponseRedirect("/")
 
-    order_models.Payment.objects.filter(payment_id=payment_session).delete()
+    # D-8 (Issue #13): cancel the order and return its stock, then delete the Payment.
+    # - Before, only the Payment was deleted. Orders.payment_ref uses
+    #   on_delete=CASCADE (orders/models.py), so the order was deleted too.
+    # - transaction.atomic(): if any step fails, every change below is undone,
+    #   so we never get an order that is cancelled but has no stock back.
+    with transaction.atomic():
+        # There is normally one Payment for this Stripe session id.
+        for pay in order_models.Payment.objects.filter(payment_id=payment_session):
+            # The order that this Payment belongs to (Payment.order).
+            order = pay.order
+            # Unlink the Payment first, so deleting it no longer deletes the order.
+            order.payment_ref = None
+            # A cancelled payment means no purchase (design A, a stated assumption).
+            order.status = "Cancelled"
+            order.save()
+            # Put the bought quantity back into the product's stock.
+            order.product.in_stock += order.quantity
+            order.product.save()
+            # Now the Payment can be deleted safely.
+            pay.delete()
 
     messages.info(request, "Payment Canceled", "alert-danger")
     request.session["payment_session"] = None
