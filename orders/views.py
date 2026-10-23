@@ -15,7 +15,14 @@ def ViewOrder(request, order_id):
         return HttpResponseRedirect("/")
 
     if not order.payment_method == "Cash On Delivery":
-        payment_status = utiles.check_payment_status(order.payment_ref.payment_id)
+        # D-7 (Issue #12): use None when there is no Payment, so the page opens.
+        # - payment_ref is empty (None) when Stripe failed on the payment page.
+        # - None has no payment_id, so the old line raised AttributeError (error 500).
+        # - "A if B else C" means: use A when B is true, otherwise use C.
+        payment_id = order.payment_ref.payment_id if order.payment_ref else None
+        # check_payment_status (orders/utiles) gives "Unpaid" for None,
+        # without calling Stripe.
+        payment_status = utiles.check_payment_status(payment_id)
         data = {"order": order, "payment_status": payment_status}
     else:
         data = {"order": order}
@@ -418,6 +425,16 @@ def payment_done(request):
     if not payment_session:
         return HttpResponseRedirect("/")
 
+    # D-6 (Issue #11): ask Stripe if the customer really paid, before saving "paid".
+    # - check_payment_status (orders/utiles) asks Stripe about this session.
+    # - Stripe answers "paid" only when the money was taken.
+    # - Without this check, anyone who opens /payment_done/ gets a paid order.
+    if utiles.check_payment_status(payment_session) != "paid":
+        # Tell the customer that the payment did not go through (red message).
+        messages.info(request, "Payment not completed", "alert-danger")
+        # Stop here, so the Payment stays unpaid, and go back to the home page.
+        return HttpResponseRedirect("/")
+
     payModel = order_models.Payment.objects.filter(payment_id=payment_session)
 
     payModel.update(status=True)
@@ -433,7 +450,26 @@ def payment_canceled(request):
     if not payment_session:
         return HttpResponseRedirect("/")
 
-    order_models.Payment.objects.filter(payment_id=payment_session).delete()
+    # D-8 (Issue #13): cancel the order and return its stock, then delete the Payment.
+    # - Before, only the Payment was deleted. Orders.payment_ref uses
+    #   on_delete=CASCADE (orders/models.py), so the order was deleted too.
+    # - transaction.atomic(): if any step fails, every change below is undone,
+    #   so we never get an order that is cancelled but has no stock back.
+    with transaction.atomic():
+        # There is normally one Payment for this Stripe session id.
+        for pay in order_models.Payment.objects.filter(payment_id=payment_session):
+            # The order that this Payment belongs to (Payment.order).
+            order = pay.order
+            # Unlink the Payment first, so deleting it no longer deletes the order.
+            order.payment_ref = None
+            # A cancelled payment means no purchase (design A, a stated assumption).
+            order.status = "Cancelled"
+            order.save()
+            # Put the bought quantity back into the product's stock.
+            order.product.in_stock += order.quantity
+            order.product.save()
+            # Now the Payment can be deleted safely.
+            pay.delete()
 
     messages.info(request, "Payment Canceled", "alert-danger")
     request.session["payment_session"] = None

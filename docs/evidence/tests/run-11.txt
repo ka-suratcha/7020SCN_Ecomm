@@ -1,0 +1,94 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.3, pytest-9.1.1, pluggy-1.6.0 -- C:\dev\Ecomm\7020SCN_Ecomm\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.10, settings: ecomm.settings (from ini)
+rootdir: C:\dev\Ecomm\7020SCN_Ecomm
+configfile: pytest.ini
+testpaths: tests
+plugins: cov-7.1.0, django-4.14.0
+collecting ... collected 28 items
+
+tests/test_smoke.py::test_home_page_loads_for_a_visitor PASSED           [  3%]
+tests/test_tc1_totals.py::test_tc1_1_order_total_with_whole_price PASSED [  7%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[19.99x1] PASSED [ 10%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[19.99x2] PASSED [ 14%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[19.99x3] PASSED [ 17%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[1.10x3] PASSED [ 21%]
+tests/test_tc1_totals.py::test_tc1_3_cart_page_shows_exact_subtotal PASSED [ 25%]
+tests/test_tc1_totals.py::test_tc1_4_cart_order_total_adds_all_orders PASSED [ 28%]
+tests/test_tc2_stock.py::test_tc2_1_buy_now_reduces_stock_and_creates_order PASSED [ 32%]
+tests/test_tc2_stock.py::test_tc2_2_buy_now_stock_boundaries[qty1] PASSED [ 35%]
+tests/test_tc2_stock.py::test_tc2_2_buy_now_stock_boundaries[qty5=stock] PASSED [ 39%]
+tests/test_tc2_stock.py::test_tc2_2_buy_now_stock_boundaries[qty6=stock+1] PASSED [ 42%]
+tests/test_tc2_stock.py::test_tc2_3_buy_now_rejects_invalid_quantity[qty0] PASSED [ 46%]
+tests/test_tc2_stock.py::test_tc2_3_buy_now_rejects_invalid_quantity[qty-1] PASSED [ 50%]
+tests/test_tc2_stock.py::test_tc2_3_buy_now_rejects_invalid_quantity[qty-abc] PASSED [ 53%]
+tests/test_tc2_stock.py::test_tc2_4_cart_checkout_orders_every_item PASSED [ 57%]
+tests/test_tc2_stock.py::test_tc2_5_cart_checkout_orders_nothing_if_one_item_is_short PASSED [ 60%]
+tests/test_tc3_payment.py::test_tc3_1_buy_now_sends_exact_amount_to_stripe[19.99x1] PASSED [ 64%]
+tests/test_tc3_payment.py::test_tc3_1_buy_now_sends_exact_amount_to_stripe[1.10x1] PASSED [ 67%]
+tests/test_tc3_payment.py::test_tc3_1_buy_now_sends_exact_amount_to_stripe[0.29x1] PASSED [ 71%]
+tests/test_tc3_payment.py::test_tc3_1_buy_now_sends_exact_amount_to_stripe[19.99x2] PASSED [ 75%]
+tests/test_tc3_payment.py::test_tc3_2_cart_payment_charges_each_item_once PASSED [ 78%]
+tests/test_tc3_payment.py::test_tc3_3_stripe_error_does_not_create_payment PASSED [ 82%]
+tests/test_tc3_payment.py::test_tc3_4_payment_done_marks_payment_as_paid PASSED [ 85%]
+tests/test_tc3_payment.py::test_tc3_5_order_page_shows_card_payment_status PASSED [ 89%]
+tests/test_tc3_payment.py::test_tc3_6_payment_done_without_payment_is_not_paid PASSED [ 92%]
+tests/test_tc3_payment.py::test_tc3_7_order_page_after_stripe_error_opens PASSED [ 96%]
+tests/test_tc3_payment.py::test_tc3_8_cancelled_payment_cancels_order_and_returns_stock FAILED [100%]
+
+================================== FAILURES ===================================
+________ test_tc3_8_cancelled_payment_cancels_order_and_returns_stock _________
+
+client = <django.test.client.Client object at 0x000002431C5FFED0>
+customer = <User: customer>, address = <Addresses: Test Customer>
+make_product = <function make_product.<locals>._make_product at 0x000002431C5D5760>
+
+    def test_tc3_8_cancelled_payment_cancels_order_and_returns_stock(
+        client, customer, address, make_product
+    ):
+        """TC-3.8: a payment cancelled on Stripe cancels the order and returns the stock.
+    
+        Design A (my assumption, as for D-3): a cancelled payment means no purchase,
+        so the order is cancelled and the item goes back into stock.
+    
+        Fixtures: client (pytest-django), customer, address, make_product (conftest.py).
+        """
+        # Arrange: a card order for 1 pen, with its payment page open.
+        # - The helper lowers the stock from 10 to 9 and saves a Payment.
+        # - It returns two values. We keep both: order (to find it again)
+        #   and pen (to check the stock).
+        order, pen = card_order_with_payment(client, customer, address, make_product)
+    
+        # Act: the customer presses "cancel" on the Stripe page.
+        # - Stripe then sends the browser to /payment_cancel/.
+        # - "payment_cancel" is the url name in orders/urls.py.
+        #   The view behind it is payment_canceled (orders/views.py).
+        # - No fake Stripe is needed, because this view does not call Stripe.
+        client.get(reverse("payment_cancel"))
+    
+        # Look for the order in the database again.
+        # - filter(...).first() gives the order, or None if it was deleted.
+        # - Not get(): if the row is gone, get() raises a long error
+        #   instead of our clear message below.
+        saved_order = Orders.objects.filter(id=order.id).first()
+    
+        # Read the pen again, because the view changed its stock in the database.
+        # Without this, pen.in_stock still shows the old value (9) from memory.
+        pen.refresh_from_db()
+    
+        # Assert: the order must still exist.
+        # - The risk: Orders.payment_ref uses on_delete=CASCADE (orders/models.py),
+        #   so deleting the Payment also deletes the order.
+        # - The message also shows the stock, to help find the cause.
+>       assert saved_order is not None, f"The order was deleted. Stock is {pen.in_stock}"
+E       AssertionError: The order was deleted. Stock is 9
+E       assert None is not None
+
+tests\test_tc3_payment.py:373: AssertionError
+-------------------------- Captured stderr teardown ---------------------------
+Destroying test database for alias 'default'...
+
+=========================== short test summary info ===========================
+FAILED tests/test_tc3_payment.py::test_tc3_8_cancelled_payment_cancels_order_and_returns_stock
+======================== 1 failed, 27 passed in 32.60s ========================
