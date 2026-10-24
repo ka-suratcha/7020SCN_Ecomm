@@ -1,0 +1,262 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.3, pytest-9.1.1, pluggy-1.6.0 -- C:\dev\Ecomm\7020SCN_Ecomm\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.10, settings: ecomm.settings (from ini)
+rootdir: C:\dev\Ecomm\7020SCN_Ecomm
+configfile: pytest.ini
+testpaths: tests
+plugins: cov-7.1.0, django-4.14.0
+collecting ... collected 46 items
+
+tests/test_smoke.py::test_home_page_loads_for_a_visitor PASSED           [  2%]
+tests/test_tc1_totals.py::test_tc1_1_order_total_with_whole_price PASSED [  4%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[19.99x1] PASSED [  6%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[19.99x2] PASSED [  8%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[19.99x3] PASSED [ 10%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[1.10x3] PASSED [ 13%]
+tests/test_tc1_totals.py::test_tc1_3_cart_page_shows_exact_subtotal PASSED [ 15%]
+tests/test_tc1_totals.py::test_tc1_4_cart_order_total_adds_all_orders PASSED [ 17%]
+tests/test_tc2_stock.py::test_tc2_1_buy_now_reduces_stock_and_creates_order PASSED [ 19%]
+tests/test_tc2_stock.py::test_tc2_2_buy_now_stock_boundaries[qty1] PASSED [ 21%]
+tests/test_tc2_stock.py::test_tc2_2_buy_now_stock_boundaries[qty5=stock] PASSED [ 23%]
+tests/test_tc2_stock.py::test_tc2_2_buy_now_stock_boundaries[qty6=stock+1] PASSED [ 26%]
+tests/test_tc2_stock.py::test_tc2_3_buy_now_rejects_invalid_quantity[qty0] PASSED [ 28%]
+tests/test_tc2_stock.py::test_tc2_3_buy_now_rejects_invalid_quantity[qty-1] PASSED [ 30%]
+tests/test_tc2_stock.py::test_tc2_3_buy_now_rejects_invalid_quantity[qty-abc] PASSED [ 32%]
+tests/test_tc2_stock.py::test_tc2_4_cart_checkout_orders_every_item PASSED [ 34%]
+tests/test_tc2_stock.py::test_tc2_5_cart_checkout_orders_nothing_if_one_item_is_short PASSED [ 36%]
+tests/test_tc2_stock.py::test_tc2_6_cancel_returns_stock_once[customer] PASSED [ 39%]
+tests/test_tc2_stock.py::test_tc2_6_cancel_returns_stock_once[seller] PASSED [ 41%]
+tests/test_tc3_payment.py::test_tc3_1_buy_now_sends_exact_amount_to_stripe[19.99x1] PASSED [ 43%]
+tests/test_tc3_payment.py::test_tc3_1_buy_now_sends_exact_amount_to_stripe[1.10x1] PASSED [ 45%]
+tests/test_tc3_payment.py::test_tc3_1_buy_now_sends_exact_amount_to_stripe[0.29x1] PASSED [ 47%]
+tests/test_tc3_payment.py::test_tc3_1_buy_now_sends_exact_amount_to_stripe[19.99x2] PASSED [ 50%]
+tests/test_tc3_payment.py::test_tc3_2_cart_payment_charges_each_item_once PASSED [ 52%]
+tests/test_tc3_payment.py::test_tc3_3_stripe_error_does_not_create_payment PASSED [ 54%]
+tests/test_tc3_payment.py::test_tc3_4_payment_done_marks_payment_as_paid PASSED [ 56%]
+tests/test_tc3_payment.py::test_tc3_5_order_page_shows_card_payment_status PASSED [ 58%]
+tests/test_tc3_payment.py::test_tc3_6_payment_done_without_payment_is_not_paid PASSED [ 60%]
+tests/test_tc3_payment.py::test_tc3_7_order_page_after_stripe_error_opens PASSED [ 63%]
+tests/test_tc3_payment.py::test_tc3_8_cancelled_payment_cancels_order_and_returns_stock PASSED [ 65%]
+tests/test_tc4_access.py::test_tc4_1_visitor_is_sent_to_login[checkout-slug] PASSED [ 67%]
+tests/test_tc4_access.py::test_tc4_1_visitor_is_sent_to_login[cart_checkout-None] PASSED [ 69%]
+tests/test_tc4_access.py::test_tc4_1_visitor_is_sent_to_login[order-id] FAILED [ 71%]
+tests/test_tc4_access.py::test_tc4_1_visitor_is_sent_to_login[cancel_order-id] PASSED [ 73%]
+tests/test_tc4_access.py::test_tc4_1_visitor_is_sent_to_login[dashboard-None] PASSED [ 76%]
+tests/test_tc4_access.py::test_tc4_1_visitor_is_sent_to_login[orders_view-None] PASSED [ 78%]
+tests/test_tc4_access.py::test_tc4_1_visitor_is_sent_to_login[seller_orders-id] FAILED [ 80%]
+tests/test_tc4_access.py::test_tc4_1_visitor_is_sent_to_login[generate_invoice-id] PASSED [ 82%]
+tests/test_tc4_access.py::test_tc4_2_customer_cannot_use_another_customers_order[order] PASSED [ 84%]
+tests/test_tc4_access.py::test_tc4_2_customer_cannot_use_another_customers_order[cancel_order] PASSED [ 86%]
+tests/test_tc4_access.py::test_tc4_3_checkout_rejects_another_customers_address[buy_now] FAILED [ 89%]
+tests/test_tc4_access.py::test_tc4_3_checkout_rejects_another_customers_address[cart] FAILED [ 91%]
+tests/test_tc4_access.py::test_tc4_4_only_shop_owner_opens_seller_order_pages[other_customer-seller_orders] PASSED [ 93%]
+tests/test_tc4_access.py::test_tc4_4_only_shop_owner_opens_seller_order_pages[other_customer-generate_invoice] PASSED [ 95%]
+tests/test_tc4_access.py::test_tc4_4_only_shop_owner_opens_seller_order_pages[other_seller-seller_orders] PASSED [ 97%]
+tests/test_tc4_access.py::test_tc4_4_only_shop_owner_opens_seller_order_pages[other_seller-generate_invoice] PASSED [100%]
+
+================================== FAILURES ===================================
+________________ test_tc4_1_visitor_is_sent_to_login[order-id] ________________
+
+client = <django.test.client.Client object at 0x000002075C496CB0>
+order = <Orders: customer@test.com>, url_name = 'order', fill = 'id'
+
+    @pytest.mark.parametrize(
+        ("url_name", "fill"),
+        [
+            ("checkout", "slug"),  # Buy Now page (CheckoutView)
+            ("cart_checkout", None),  # cart checkout page (CartCheckoutView)
+            ("order", "id"),  # the customer's order page (orders ViewOrder)
+            ("cancel_order", "id"),  # the customer's Cancel button (CencelOrder)
+            ("dashboard", None),  # seller dashboard
+            ("orders_view", None),  # seller list of orders
+            ("seller_orders", "id"),  # seller order page (seller_dashboard ViewOrder)
+            ("generate_invoice", "id"),  # seller invoice (PDF)
+        ],
+    )
+    def test_tc4_1_visitor_is_sent_to_login(client, order, url_name, fill):
+        """TC-4.1: a visitor who opens a checkout, order or seller page must log in.
+    
+        Fixtures: client (pytest-django), order (this file).
+        The client is not logged in, so it acts as a visitor.
+        """
+        # Arrange: choose what goes into the url for this row.
+        # - order.product.slug is the lamp's name in the url (products/models.py).
+        # - A dict gives one value for each key, so values[fill] is this row's value.
+        values = {"slug": [order.product.slug], "id": [order.id], None: []}
+        # reverse() turns the url name into the url (see the urls.py files).
+        url = reverse(url_name, args=values[fill])
+    
+        # Act: the visitor opens the page. response is what the server sends back.
+        response = client.get(url)
+    
+        # Assert: the visitor is sent away (302 is "redirect") to the login page.
+        # - response["Location"] is the address of the next page.
+        # - startswith("/login") also accepts "/login?next=...".
+        # - Without this, a visitor can see or change data without an account.
+        assert response.status_code == 302, f"{url} opened for a visitor"
+>       assert response["Location"].startswith("/login"), (
+            f"{url} sends a visitor to {response['Location']}, not to the login page"
+        )
+E       AssertionError: /order/1/ sends a visitor to /, not to the login page
+E       assert False
+E        +  where False = <built-in method startswith of str object at 0x00007FFA8BC91680>('/login')
+E        +    where <built-in method startswith of str object at 0x00007FFA8BC91680> = '/'.startswith
+
+tests\test_tc4_access.py:115: AssertionError
+____________ test_tc4_1_visitor_is_sent_to_login[seller_orders-id] ____________
+
+client = <django.test.client.Client object at 0x000002075C740690>
+order = <Orders: customer@test.com>, url_name = 'seller_orders', fill = 'id'
+
+    @pytest.mark.parametrize(
+        ("url_name", "fill"),
+        [
+            ("checkout", "slug"),  # Buy Now page (CheckoutView)
+            ("cart_checkout", None),  # cart checkout page (CartCheckoutView)
+            ("order", "id"),  # the customer's order page (orders ViewOrder)
+            ("cancel_order", "id"),  # the customer's Cancel button (CencelOrder)
+            ("dashboard", None),  # seller dashboard
+            ("orders_view", None),  # seller list of orders
+            ("seller_orders", "id"),  # seller order page (seller_dashboard ViewOrder)
+            ("generate_invoice", "id"),  # seller invoice (PDF)
+        ],
+    )
+    def test_tc4_1_visitor_is_sent_to_login(client, order, url_name, fill):
+        """TC-4.1: a visitor who opens a checkout, order or seller page must log in.
+    
+        Fixtures: client (pytest-django), order (this file).
+        The client is not logged in, so it acts as a visitor.
+        """
+        # Arrange: choose what goes into the url for this row.
+        # - order.product.slug is the lamp's name in the url (products/models.py).
+        # - A dict gives one value for each key, so values[fill] is this row's value.
+        values = {"slug": [order.product.slug], "id": [order.id], None: []}
+        # reverse() turns the url name into the url (see the urls.py files).
+        url = reverse(url_name, args=values[fill])
+    
+        # Act: the visitor opens the page. response is what the server sends back.
+        response = client.get(url)
+    
+        # Assert: the visitor is sent away (302 is "redirect") to the login page.
+        # - response["Location"] is the address of the next page.
+        # - startswith("/login") also accepts "/login?next=...".
+        # - Without this, a visitor can see or change data without an account.
+        assert response.status_code == 302, f"{url} opened for a visitor"
+>       assert response["Location"].startswith("/login"), (
+            f"{url} sends a visitor to {response['Location']}, not to the login page"
+        )
+E       AssertionError: /seller/orders/1/ sends a visitor to /, not to the login page
+E       assert False
+E        +  where False = <built-in method startswith of str object at 0x00007FFA8BC91680>('/login')
+E        +    where <built-in method startswith of str object at 0x00007FFA8BC91680> = '/'.startswith
+
+tests\test_tc4_access.py:115: AssertionError
+_______ test_tc4_3_checkout_rejects_another_customers_address[buy_now] ________
+
+client = <django.test.client.Client object at 0x000002075C7C3ED0>
+other_customer = <User: other>, address = <Addresses: Test Customer>
+make_product = <function make_product.<locals>._make_product at 0x000002075C7D74C0>
+checkout = 'buy_now'
+
+    @pytest.mark.parametrize("checkout", ["buy_now", "cart"])
+    def test_tc4_3_checkout_rejects_another_customers_address(
+        client, other_customer, address, make_product, checkout
+    ):
+        """TC-4.3: a customer cannot check out with another customer's saved address.
+    
+        Fixtures: client (pytest-django), other_customer (this file),
+        address and make_product (conftest.py). `address` belongs to `customer`.
+        """
+        # Arrange: make a "Lamp" with 10 in stock (make_product, conftest.py).
+        lamp = make_product("Lamp", Decimal("12.50"), in_stock=10)
+        # Log in as the other customer.
+        client.force_login(other_customer)
+    
+        # Act: check out, but send the id of the first customer's address.
+        # - The checkout form sends the address id in "savedAddresses".
+        # - Anyone can change this id in the request, so the server must check it.
+        if checkout == "buy_now":
+            # Buy Now for 1 lamp (CheckoutView.post, orders/views.py).
+            client.post(
+                reverse("checkout", args=[lamp.slug]),
+                {"quantity": 1, "payment_method": COD, "savedAddresses": address.id},
+            )
+        else:
+            # Put 1 lamp in the cart ("add_to_cart" in orders/urls.py).
+            client.get(reverse("add_to_cart", args=[lamp.slug]))
+            # Check out the cart (CartCheckoutView.post, orders/views.py).
+            client.post(
+                reverse("cart_checkout"),
+                {"payment_method": COD, "savedAddresses": address.id},
+            )
+    
+        # Read the lamp again, because the view may have changed its stock.
+        lamp.refresh_from_db()
+        # Count the orders that use the first customer's address.
+        orders = Orders.objects.filter(address=address).count()
+        # Assert: no order uses that address, and stock is still 10.
+        # - Without this check, the order goes to someone else's home, and the
+        #   other customer sees that person's name and phone on the order page.
+>       assert orders == 0, f"{orders} order(s) made with another customer's address"
+E       AssertionError: 1 order(s) made with another customer's address
+E       assert 1 == 0
+
+tests\test_tc4_access.py:193: AssertionError
+_________ test_tc4_3_checkout_rejects_another_customers_address[cart] _________
+
+client = <django.test.client.Client object at 0x000002075C7C0550>
+other_customer = <User: other>, address = <Addresses: Test Customer>
+make_product = <function make_product.<locals>._make_product at 0x000002075C7C23E0>
+checkout = 'cart'
+
+    @pytest.mark.parametrize("checkout", ["buy_now", "cart"])
+    def test_tc4_3_checkout_rejects_another_customers_address(
+        client, other_customer, address, make_product, checkout
+    ):
+        """TC-4.3: a customer cannot check out with another customer's saved address.
+    
+        Fixtures: client (pytest-django), other_customer (this file),
+        address and make_product (conftest.py). `address` belongs to `customer`.
+        """
+        # Arrange: make a "Lamp" with 10 in stock (make_product, conftest.py).
+        lamp = make_product("Lamp", Decimal("12.50"), in_stock=10)
+        # Log in as the other customer.
+        client.force_login(other_customer)
+    
+        # Act: check out, but send the id of the first customer's address.
+        # - The checkout form sends the address id in "savedAddresses".
+        # - Anyone can change this id in the request, so the server must check it.
+        if checkout == "buy_now":
+            # Buy Now for 1 lamp (CheckoutView.post, orders/views.py).
+            client.post(
+                reverse("checkout", args=[lamp.slug]),
+                {"quantity": 1, "payment_method": COD, "savedAddresses": address.id},
+            )
+        else:
+            # Put 1 lamp in the cart ("add_to_cart" in orders/urls.py).
+            client.get(reverse("add_to_cart", args=[lamp.slug]))
+            # Check out the cart (CartCheckoutView.post, orders/views.py).
+            client.post(
+                reverse("cart_checkout"),
+                {"payment_method": COD, "savedAddresses": address.id},
+            )
+    
+        # Read the lamp again, because the view may have changed its stock.
+        lamp.refresh_from_db()
+        # Count the orders that use the first customer's address.
+        orders = Orders.objects.filter(address=address).count()
+        # Assert: no order uses that address, and stock is still 10.
+        # - Without this check, the order goes to someone else's home, and the
+        #   other customer sees that person's name and phone on the order page.
+>       assert orders == 0, f"{orders} order(s) made with another customer's address"
+E       AssertionError: 1 order(s) made with another customer's address
+E       assert 1 == 0
+
+tests\test_tc4_access.py:193: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_tc4_access.py::test_tc4_1_visitor_is_sent_to_login[order-id]
+FAILED tests/test_tc4_access.py::test_tc4_1_visitor_is_sent_to_login[seller_orders-id]
+FAILED tests/test_tc4_access.py::test_tc4_3_checkout_rejects_another_customers_address[buy_now]
+FAILED tests/test_tc4_access.py::test_tc4_3_checkout_rejects_another_customers_address[cart]
+=================== 4 failed, 42 passed in 62.87s (0:01:02) ===================
