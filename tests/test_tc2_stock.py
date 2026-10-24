@@ -9,6 +9,8 @@ Business rules tested:
 - After checkout, stock goes down by the quantity bought.
 - If one item in a cart cannot be bought, nothing in that cart is ordered.
   (One cart is one purchase: all of it happens, or none of it.)
+- When an order is cancelled (by the customer or the seller), its items go
+  back into stock, and only once.
 
 Test design (report 3.2):
 - Boundary value analysis (BVA) on quantity with 5 in stock:
@@ -174,3 +176,60 @@ def test_tc2_5_cart_checkout_orders_nothing_if_one_item_is_short(
     )
     assert lamp.in_stock == 5
     assert mug.in_stock == 2
+
+
+# Each row: who presses "Cancel", and the url name of that Cancel button.
+# - "cancel_order" is in orders/urls.py. Its view is CencelOrder (orders/views.py).
+# - "seller_cancel_order" is in seller_dashboard/urls.py. Its view is
+#   cancel_order (seller_dashboard/views.py).
+@pytest.mark.parametrize(
+    ("who", "url_name"),
+    [
+        ("customer", "cancel_order"),  # the customer cancels on the orders page
+        ("seller", "seller_cancel_order"),  # the seller cancels in the dashboard
+    ],
+    ids=["customer", "seller"],
+)
+def test_tc2_6_cancel_returns_stock_once(
+    client, customer, seller, address, make_product, who, url_name
+):
+    """TC-2.6: a cancelled order puts its items back in stock, and only once.
+
+    Fixtures: client (pytest-django), customer, seller, address,
+    make_product (conftest.py). The lamp is in the seller's shop (fixture shop).
+    """
+    # Arrange: make a "Lamp" with 10 in stock (make_product, conftest.py).
+    lamp = make_product("Lamp", Decimal("12.50"), in_stock=10)
+    # Log in as the customer without a password (force_login, see TC-2.1).
+    client.force_login(customer)
+    # Buy 1 lamp (buy_now, top of this file). Stock goes to 9.
+    buy_now(client, lamp, address, 1)
+    # Get the order that Buy Now made (this customer has one order).
+    order = Orders.objects.get(user=customer)
+    # Log in as the person in this row. force_login replaces the last login.
+    # - "A if B else C" means: use A when B is true, otherwise use C.
+    client.force_login(seller if who == "seller" else customer)
+
+    # Act, part 1: press "Cancel" for this order.
+    # - args=[order.id] puts the order id into the url.
+    client.get(reverse(url_name, args=[order.id]))
+
+    # Read the order and the lamp again, because the view changed them.
+    order.refresh_from_db()
+    lamp.refresh_from_db()
+    # Assert: the order is now cancelled.
+    assert order.status == "Cancelled"
+    # Assert: the 1 lamp is back in stock, so 9 + 1 = 10.
+    # - Without this, every cancelled order loses items from the shop for ever.
+    # - The text after the comma is the message pytest shows if the check fails.
+    assert lamp.in_stock == 10, f"Stock is {lamp.in_stock} after cancel, not 10"
+
+    # Act, part 2: press "Cancel" again for the same order.
+    # - A person can do this by pressing the button twice or by going back.
+    client.get(reverse(url_name, args=[order.id]))
+
+    # Read the lamp again, because the view may have changed it.
+    lamp.refresh_from_db()
+    # Assert: stock is still 10, not 11. One lamp was bought, so one comes back.
+    # - 11 means the shop now sells a lamp that it does not have.
+    assert lamp.in_stock == 10, f"Stock is {lamp.in_stock} after 2 cancels, not 10"
