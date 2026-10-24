@@ -1,5 +1,4 @@
 from django.shortcuts import render
-from django.views.decorators.cache import cache_page
 from django.http import HttpResponseRedirect
 from . import models as product_models
 
@@ -9,7 +8,7 @@ def product(request, slug):
         product = product_models.Products.objects.get(slug=slug)
     except product_models.Products.DoesNotExist:
         return HttpResponseRedirect("/") # return 404 page
-    
+
     catagories = product_models.Category.objects.all()[:5]
 
     related_products = product_models.Products.objects.filter(
@@ -33,7 +32,7 @@ def category(request, slug):
         category = product_models.Category.objects.get(slug=slug)
     except product_models.Category.DoesNotExist:
         return HttpResponseRedirect("/") # return 404 page
-    
+
     products = product_models.Products.objects.filter(
         category=category
     )

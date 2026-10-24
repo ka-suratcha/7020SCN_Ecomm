@@ -20,12 +20,12 @@ class RegisterShop(View):
 
         if request.user.is_authenticated and request.user.is_vendor:
             return HttpResponseRedirect("/seller/dashboard/")
-        
+
         return render(request, "shops/seller_reg.html")
-    
+
     def post(self, request):
         user = request.user
-        
+
         # 1. Handle Unauthenticated User Registration
         if not user.is_authenticated:
             email = request.POST.get("email")
@@ -82,5 +82,7 @@ class RegisterShop(View):
             logo=shop_image
         )
 
-        messages.success(request, f"Congratulations! Your shop '{shop_name}' is now active.")
+        messages.success(
+            request, f"Congratulations! Your shop '{shop_name}' is now active."
+        )
         return redirect("/seller/dashboard/")

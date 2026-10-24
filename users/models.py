@@ -17,7 +17,8 @@ class CustomUserManager(UserManager):
             raise ValueError("The given email must be set")
         if 'username' not in extra_fields:
             extra_fields['username'] = email.split('@')[0]
-            # Ensure unique username if possible here or let it fail if user/view handles it
+            # Ensure unique username if possible here,
+            # or let it fail if the user/view handles it
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -39,7 +40,10 @@ class User(AbstractUser):
         Group,
         verbose_name="groups",
         blank=True,
-        help_text="The groups this user belongs to. A user will get all permissions granted to each of their groups.",
+        help_text=(
+            "The groups this user belongs to. "
+            "A user will get all permissions granted to each of their groups."
+        ),
         related_name="user_set",
         related_query_name="user",
     )
@@ -60,7 +64,7 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
-    
+
 class Addresses(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     full_name = models.CharField(max_length=100)

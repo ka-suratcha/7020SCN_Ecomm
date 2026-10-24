@@ -20,7 +20,7 @@ class Orders(models.Model):
         max_digits=12, decimal_places=2, null=True, blank=True
     )
     address = models.ForeignKey("users.Addresses", on_delete=models.CASCADE)
-    
+
     status_choice = (
         ("Pending", "Pending"),
         ("Processing", "Processing"),
@@ -30,7 +30,9 @@ class Orders(models.Model):
     )
 
     status = models.CharField(max_length=100, choices=status_choice, default="Pending")
-    payment_ref = models.ForeignKey("orders.Payment", on_delete=models.CASCADE, null=True, blank=True)
+    payment_ref = models.ForeignKey(
+        "orders.Payment", on_delete=models.CASCADE, null=True, blank=True
+    )
 
     def __str__(self):
         return self.user.email
@@ -58,7 +60,7 @@ class CartInOrder(models.Model):
 
     def __str__(self):
         return self.user.email
-    
+
     def place(self, *args, **kwargs):
         self.total = 0
         for order in self.orders_in.all():

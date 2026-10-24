@@ -68,7 +68,7 @@ def add_to_cart(request, slug):
         request.session["cart"] = {"cart_count": 0}
 
     cart = request.session["cart"]
-    if not "cart_count" in cart:
+    if "cart_count" not in cart:
         cart["cart_count"] = 0
 
     if str(slug) in cart:
@@ -221,7 +221,7 @@ class CartCheckoutView(View):
             )
         except user_models.Addresses.DoesNotExist:
             messages.info(request, "Please Select Address", "alert-danger")
-            return HttpResponseRedirect(f"/checkout/")
+            return HttpResponseRedirect("/checkout/")
 
         # list(): read the products once, so both loops below use the same objects.
         products = list(
@@ -232,7 +232,7 @@ class CartCheckoutView(View):
 
         if not products:
             messages.info(request, "Cart is empty", "alert-danger")
-            return HttpResponseRedirect(f"/")
+            return HttpResponseRedirect("/")
 
         cart = request.session["cart"]
 
@@ -242,12 +242,18 @@ class CartCheckoutView(View):
         #   so there is nothing to undo.
         for product in products:
             if product.shop.user == request.user:
-                messages.info(request, "You can't order your own product", "alert-danger")
-                return HttpResponseRedirect(f"/")
+                messages.info(
+                    request, "You can't order your own product", "alert-danger"
+                )
+                return HttpResponseRedirect("/")
 
             if product.in_stock < cart[product.slug]["quantity"]:
-                messages.error(request, f"Not enough stock for {product.name}", "alert-danger")
-                return HttpResponseRedirect(f"/")
+                messages.error(
+                    request,
+                    f"Not enough stock for {product.name}",
+                    "alert-danger",
+                )
+                return HttpResponseRedirect("/")
 
         # Step 2: all checks passed, so make the orders and reduce the stock.
         # transaction.atomic(): if anything fails inside this block,
@@ -309,11 +315,11 @@ class CheckoutView(View):
             product = product_models.Products.objects.get(slug=slug)
         except product_models.Products.DoesNotExist:
             return HttpResponseRedirect("/")
-        
+
         if product.shop.user == request.user:
             messages.info(request, "You can't order your own product", "alert-danger")
             return HttpResponseRedirect("/")
-        
+
 
         # Check the quantity before any order is made (Issue #5).
         # - It comes from the request, so anyone can send any value,
@@ -423,7 +429,7 @@ def paymentCart(request, CartOrder_id):
 
     if order.orders_in.first().payment_method != "Credit Card":
         return HttpResponseRedirect("/")
-    
+
 
     payment_session = utiles.create_checkout_session_cart(order)
 
@@ -433,13 +439,14 @@ def paymentCart(request, CartOrder_id):
     request.session["payment_session"] = payment_session.id
     request.session.modified = True
 
-    for order in order.orders_in.all():
+    # B020: the loop variable is "item", so "order" (the cart order) is kept.
+    for item in order.orders_in.all():
         payment = order_models.Payment.objects.create(
-            order=order, payment_id=payment_session.id
+            order=item, payment_id=payment_session.id
         )
 
-        order.payment_ref = payment
-        order.save()
+        item.payment_ref = payment
+        item.save()
 
     return HttpResponseRedirect(payment_session.url)
 

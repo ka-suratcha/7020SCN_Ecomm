@@ -42,7 +42,11 @@ class Products(models.Model):
     variants = models.ManyToManyField(variants)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, default=1)
     shop = models.ForeignKey(
-        "shops.Shops", on_delete=models.CASCADE, null=True, related_name="products", blank=True
+        "shops.Shops",
+        on_delete=models.CASCADE,
+        null=True,
+        related_name="products",
+        blank=True,
     )
     image = models.ImageField(upload_to="static/products/images", null=True, blank=True)
     slug = models.SlugField(unique=True, null=True, blank=True)
