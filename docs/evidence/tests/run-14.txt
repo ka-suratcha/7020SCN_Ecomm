@@ -1,0 +1,42 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.3, pytest-9.1.1, pluggy-1.6.0 -- C:\dev\Ecomm\7020SCN_Ecomm\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.10, settings: ecomm.settings (from ini)
+rootdir: C:\dev\Ecomm\7020SCN_Ecomm
+configfile: pytest.ini
+testpaths: tests
+plugins: cov-7.1.0, django-4.14.0
+collecting ... collected 30 items
+
+tests/test_smoke.py::test_home_page_loads_for_a_visitor PASSED           [  3%]
+tests/test_tc1_totals.py::test_tc1_1_order_total_with_whole_price PASSED [  6%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[19.99x1] PASSED [ 10%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[19.99x2] PASSED [ 13%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[19.99x3] PASSED [ 16%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[1.10x3] PASSED [ 20%]
+tests/test_tc1_totals.py::test_tc1_3_cart_page_shows_exact_subtotal PASSED [ 23%]
+tests/test_tc1_totals.py::test_tc1_4_cart_order_total_adds_all_orders PASSED [ 26%]
+tests/test_tc2_stock.py::test_tc2_1_buy_now_reduces_stock_and_creates_order PASSED [ 30%]
+tests/test_tc2_stock.py::test_tc2_2_buy_now_stock_boundaries[qty1] PASSED [ 33%]
+tests/test_tc2_stock.py::test_tc2_2_buy_now_stock_boundaries[qty5=stock] PASSED [ 36%]
+tests/test_tc2_stock.py::test_tc2_2_buy_now_stock_boundaries[qty6=stock+1] PASSED [ 40%]
+tests/test_tc2_stock.py::test_tc2_3_buy_now_rejects_invalid_quantity[qty0] PASSED [ 43%]
+tests/test_tc2_stock.py::test_tc2_3_buy_now_rejects_invalid_quantity[qty-1] PASSED [ 46%]
+tests/test_tc2_stock.py::test_tc2_3_buy_now_rejects_invalid_quantity[qty-abc] PASSED [ 50%]
+tests/test_tc2_stock.py::test_tc2_4_cart_checkout_orders_every_item PASSED [ 53%]
+tests/test_tc2_stock.py::test_tc2_5_cart_checkout_orders_nothing_if_one_item_is_short PASSED [ 56%]
+tests/test_tc2_stock.py::test_tc2_6_cancel_returns_stock_once[customer] PASSED [ 60%]
+tests/test_tc2_stock.py::test_tc2_6_cancel_returns_stock_once[seller] PASSED [ 63%]
+tests/test_tc3_payment.py::test_tc3_1_buy_now_sends_exact_amount_to_stripe[19.99x1] PASSED [ 66%]
+tests/test_tc3_payment.py::test_tc3_1_buy_now_sends_exact_amount_to_stripe[1.10x1] PASSED [ 70%]
+tests/test_tc3_payment.py::test_tc3_1_buy_now_sends_exact_amount_to_stripe[0.29x1] PASSED [ 73%]
+tests/test_tc3_payment.py::test_tc3_1_buy_now_sends_exact_amount_to_stripe[19.99x2] PASSED [ 76%]
+tests/test_tc3_payment.py::test_tc3_2_cart_payment_charges_each_item_once PASSED [ 80%]
+tests/test_tc3_payment.py::test_tc3_3_stripe_error_does_not_create_payment PASSED [ 83%]
+tests/test_tc3_payment.py::test_tc3_4_payment_done_marks_payment_as_paid PASSED [ 86%]
+tests/test_tc3_payment.py::test_tc3_5_order_page_shows_card_payment_status PASSED [ 90%]
+tests/test_tc3_payment.py::test_tc3_6_payment_done_without_payment_is_not_paid PASSED [ 93%]
+tests/test_tc3_payment.py::test_tc3_7_order_page_after_stripe_error_opens PASSED [ 96%]
+tests/test_tc3_payment.py::test_tc3_8_cancelled_payment_cancels_order_and_returns_stock PASSED [100%]
+
+============================= 30 passed in 38.60s =============================
