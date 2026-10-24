@@ -1,0 +1,7 @@
+[run]
+# Measure only the code that people wrote (same scope as the baseline).
+# Django makes the migrations, and tests/ is the test code itself.
+omit =
+    */migrations/*
+    tests/*
+    .venv/*

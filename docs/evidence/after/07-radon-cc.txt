@@ -1,0 +1,122 @@
+manage.py
+    F 7:0 main - A (2)
+ecomm\settings.py
+    F 153:0 show_toolbar - A (1)
+home\apps.py
+    C 4:0 HomeConfig - A (1)
+home\models.py
+    C 3:0 newsletter - A (2)
+    M 7:4 newsletter.__str__ - A (1)
+home\views.py
+    F 8:0 home - A (3)
+    F 35:0 subscribe - A (3)
+    C 25:0 Search - A (3)
+    M 26:4 Search.get - A (2)
+orders\apps.py
+    C 4:0 OrdersConfig - A (1)
+orders\models.py
+    C 53:0 CartInOrder - A (3)
+    C 5:0 Orders - A (2)
+    C 44:0 Payment - A (2)
+    M 64:4 CartInOrder.place - A (2)
+    M 37:4 Orders.__str__ - A (1)
+    M 40:4 Orders.save - A (1)
+    M 49:4 Payment.__str__ - A (1)
+    M 61:4 CartInOrder.__str__ - A (1)
+    C 72:0 CartPayment - A (1)
+orders\views.py
+    C 162:0 CartCheckoutView - B (9)
+    M 206:4 CartCheckoutView.post - B (9)
+    M 309:4 CheckoutView.post - B (9)
+    F 414:0 paymentCart - B (7)
+    C 290:0 CheckoutView - B (7)
+    F 377:0 payment - B (6)
+    M 163:4 CartCheckoutView.get - B (6)
+    F 12:0 ViewOrder - A (5)
+    F 66:0 add_to_cart - A (5)
+    F 41:0 CencelOrder - A (4)
+    F 113:0 cart - A (4)
+    F 142:0 delete_address - A (4)
+    F 97:0 remove_one_from_cart - A (3)
+    F 453:0 payment_done - A (3)
+    F 479:0 payment_canceled - A (3)
+    M 291:4 CheckoutView.get - A (3)
+    F 85:0 remove_from_cart - A (2)
+orders\templatetags\multiply.py
+    F 6:0 multiply - A (1)
+orders\utiles\__init__.py
+    F 32:0 create_checkout_session_cart - A (3)
+    F 6:0 create_checkout_session - A (2)
+    F 64:0 check_payment_status - A (2)
+products\apps.py
+    C 4:0 ProductsConfig - A (1)
+products\models.py
+    C 6:0 Category - A (3)
+    C 36:0 Products - A (3)
+    M 13:4 Category.save - A (2)
+    C 22:0 variants - A (2)
+    M 56:4 Products.save - A (2)
+    M 18:4 Category.__str__ - A (1)
+    M 32:4 variants.__str__ - A (1)
+    M 61:4 Products.__str__ - A (1)
+products\views.py
+    F 6:0 product - A (2)
+    F 30:0 category - A (2)
+seller_dashboard\apps.py
+    C 4:0 SellerDashboardConfig - A (1)
+seller_dashboard\views.py
+    F 52:0 ViewOrder - A (5)
+    F 94:0 cancel_order - A (5)
+    C 122:0 AddProduct - A (5)
+    M 130:4 AddProduct.post - A (5)
+    F 18:0 dashboard - A (4)
+    F 77:0 ShipOrder - A (4)
+    F 167:0 generate_invoice - A (4)
+    F 248:0 Products - A (3)
+    M 123:4 AddProduct.get - A (3)
+    F 220:0 Orders - A (2)
+shops\apps.py
+    C 4:0 ShopsConfig - A (1)
+shops\models.py
+    C 6:0 Shops - A (3)
+    M 12:4 Shops.save - A (2)
+    M 17:4 Shops.__str__ - A (1)
+shops\views.py
+    C 18:0 RegisterShop - B (6)
+    M 26:4 RegisterShop.post - B (6)
+    M 19:4 RegisterShop.get - A (3)
+    F 12:0 Shop - A (1)
+users\apps.py
+    C 4:0 UsersConfig - A (1)
+users\models.py
+    C 5:0 CustomUserManager - A (4)
+    M 6:4 CustomUserManager.create_vendor - A (3)
+    M 15:4 CustomUserManager.create_user - A (3)
+    C 28:0 User - A (2)
+    C 68:0 Addresses - A (2)
+    M 65:4 User.__str__ - A (1)
+    M 75:4 Addresses.__str__ - A (1)
+users\views.py
+    M 111:4 Profile.post - B (7)
+    C 40:0 Register - B (6)
+    M 48:4 Register.post - B (6)
+    C 94:0 Profile - B (6)
+    C 13:0 Login - A (5)
+    C 182:0 EditAddress - A (5)
+    M 21:4 Login.post - A (4)
+    C 151:0 SaveAddress - A (4)
+    M 183:4 EditAddress.get - A (4)
+    M 200:4 EditAddress.post - A (4)
+    M 14:4 Login.get - A (3)
+    M 41:4 Register.get - A (3)
+    M 152:4 SaveAddress.get - A (3)
+    M 160:4 SaveAddress.post - A (3)
+    M 95:4 Profile.get - A (2)
+    F 89:0 logout_view - A (1)
+users\management\commands\setup_dev_data.py
+    C 5:0 Command - A (5)
+    M 20:4 Command.handle - A (5)
+    M 11:4 Command.get_unique_username - A (2)
+
+97 blocks (classes, functions, methods) analyzed.
+Average complexity: A (3.185567010309278)

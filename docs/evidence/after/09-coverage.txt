@@ -1,0 +1,73 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.3, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.10, settings: ecomm.settings (from ini)
+rootdir: C:\dev\Ecomm\7020SCN_Ecomm
+configfile: pytest.ini
+testpaths: tests
+plugins: cov-7.1.0, django-4.14.0
+collected 46 items
+
+tests\test_smoke.py .                                                    [  2%]
+tests\test_tc1_totals.py .......                                         [ 17%]
+tests\test_tc2_stock.py ...........                                      [ 41%]
+tests\test_tc3_payment.py ...........                                    [ 65%]
+tests\test_tc4_access.py ................                                [100%]
+
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.3-final-0 _______________
+
+Name                              Stmts   Miss  Cover
+-----------------------------------------------------
+ecomm\__init__.py                     0      0   100%
+ecomm\asgi.py                         4      4     0%
+ecomm\settings.py                    32      1    97%
+ecomm\urls.py                         6      0   100%
+ecomm\wsgi.py                         4      4     0%
+home\__init__.py                      0      0   100%
+home\admin.py                         0      0   100%
+home\apps.py                          4      0   100%
+home\models.py                        6      1    83%
+home\tests.py                         0      0   100%
+home\urls.py                          3      0   100%
+home\views.py                        29     14    52%
+manage.py                            11     11     0%
+orders\__init__.py                    0      0   100%
+orders\admin.py                       4      0   100%
+orders\apps.py                        4      0   100%
+orders\models.py                     39      2    95%
+orders\templatetags\multiply.py       5      1    80%
+orders\tests.py                       0      0   100%
+orders\urls.py                        3      0   100%
+orders\utiles\__init__.py            26      3    88%
+orders\views.py                     264     81    69%
+products\__init__.py                  0      0   100%
+products\admin.py                     5      0   100%
+products\apps.py                      4      0   100%
+products\models.py                   41      3    93%
+products\tests.py                     0      0   100%
+products\urls.py                      3      0   100%
+products\views.py                    18     13    28%
+seller_dashboard\__init__.py          0      0   100%
+seller_dashboard\admin.py             0      0   100%
+seller_dashboard\apps.py              4      0   100%
+seller_dashboard\models.py            0      0   100%
+seller_dashboard\tests.py             0      0   100%
+seller_dashboard\urls.py              3      0   100%
+seller_dashboard\views.py           132     80    39%
+shops\__init__.py                     0      0   100%
+shops\admin.py                        3      0   100%
+shops\apps.py                         4      0   100%
+shops\models.py                      14      2    86%
+shops\tests.py                        0      0   100%
+shops\urls.py                         3      0   100%
+shops\views.py                       51     39    24%
+users\__init__.py                     0      0   100%
+users\admin.py                        4      0   100%
+users\apps.py                         4      0   100%
+users\models.py                      42     10    76%
+users\tests.py                        0      0   100%
+users\urls.py                         3      0   100%
+users\views.py                      155    132    15%
+-----------------------------------------------------
+TOTAL                               937    401    57%
+======================== 46 passed in 63.13s (0:01:03) ========================

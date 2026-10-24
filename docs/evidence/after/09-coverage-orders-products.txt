@@ -1,0 +1,39 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.3, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.10, settings: ecomm.settings (from ini)
+rootdir: C:\dev\Ecomm\7020SCN_Ecomm
+configfile: pytest.ini
+testpaths: tests
+plugins: cov-7.1.0, django-4.14.0
+collected 46 items
+
+tests\test_smoke.py .                                                    [  2%]
+tests\test_tc1_totals.py .......                                         [ 17%]
+tests\test_tc2_stock.py ...........                                      [ 41%]
+tests\test_tc3_payment.py ...........                                    [ 65%]
+tests\test_tc4_access.py ................                                [100%]
+
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.3-final-0 _______________
+
+Name                              Stmts   Miss  Cover
+-----------------------------------------------------
+orders\__init__.py                    0      0   100%
+orders\admin.py                       4      0   100%
+orders\apps.py                        4      0   100%
+orders\models.py                     39      2    95%
+orders\templatetags\multiply.py       5      1    80%
+orders\tests.py                       0      0   100%
+orders\urls.py                        3      0   100%
+orders\utiles\__init__.py            26      3    88%
+orders\views.py                     264     81    69%
+products\__init__.py                  0      0   100%
+products\admin.py                     5      0   100%
+products\apps.py                      4      0   100%
+products\models.py                   41      3    93%
+products\tests.py                     0      0   100%
+products\urls.py                      3      0   100%
+products\views.py                    18     13    28%
+-----------------------------------------------------
+TOTAL                               416    103    75%
+======================== 46 passed in 66.78s (0:01:06) ========================
