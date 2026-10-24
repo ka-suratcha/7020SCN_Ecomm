@@ -51,6 +51,11 @@ def dashboard(request):
 
 
 def ViewOrder(request, order_id):
+    # D-12 (Issue #19): the same login check as the other seller pages here.
+    # Before, a visitor was sent to the home page, not to the login page.
+    if not request.user.is_authenticated:
+        # Stop here and open the login page.
+        return HttpResponseRedirect("/login")
     order = get_object_or_404(order_models.Orders, id=order_id)
     if not order.product.shop.user == request.user:
         return HttpResponseRedirect("/")
@@ -159,12 +164,26 @@ class AddProduct(View):
 
 
 def generate_invoice(request, order_id):
+    # D-10 (Issue #17): only the shop owner can get the invoice.
+    # - Before, there was no check, so anyone who typed the url got the PDF,
+    #   with the customer's name on it.
+    # - A visitor goes to the login page, like the other seller pages here.
+    if not request.user.is_authenticated:
+        # Stop here and open the login page.
+        return HttpResponseRedirect("/login")
+
     # Get the order details
     Order = order_models.Orders
     try:
         order = Order.objects.get(id=order_id)
     except Order.DoesNotExist:
         return HttpResponse("Order not found", status=404)
+
+    # D-10: the same owner check as ViewOrder and cancel_order in this file.
+    # The order's product must be in this user's shop, or the user is sent away.
+    if order.product.shop.user != request.user:
+        # Stop here and go back to the home page, so no PDF is made.
+        return HttpResponseRedirect("/")
 
     # Create the HttpResponse object with the appropriate PDF headers.
     response = HttpResponse(content_type="application/pdf")

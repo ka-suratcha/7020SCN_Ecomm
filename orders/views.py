@@ -10,6 +10,13 @@ from orders import utiles
 
 
 def ViewOrder(request, order_id):
+    # D-12 (Issue #19): a visitor must log in before seeing an order page.
+    # - Before, there was no login check. The owner check below failed for a
+    #   visitor and sent them to the home page, without asking them to log in.
+    # - next=... brings the customer back to this order after they log in.
+    if not request.user.is_authenticated:
+        # Stop here and open the login page.
+        return HttpResponseRedirect(f"/login?next=/order/{order_id}/")
     order = get_object_or_404(order_models.Orders, id=order_id)
     if not order.user == request.user:
         return HttpResponseRedirect("/")
@@ -204,8 +211,13 @@ class CartCheckoutView(View):
         payment_method = request.POST.get("payment_method")
 
         try:
+            # D-11 (Issue #18): get the address only if it belongs to this user.
+            # - Before, any address id was accepted, so a customer could order
+            #   with another customer's address (their name, phone and home).
+            # - With user=request.user, another user's address is "not found",
+            #   so the except below sends the customer back to choose an address.
             savedAddresses = user_models.Addresses.objects.get(
-                id=request.POST.get("savedAddresses")
+                id=request.POST.get("savedAddresses"), user=request.user
             )
         except user_models.Addresses.DoesNotExist:
             messages.info(request, "Please Select Address", "alert-danger")
@@ -326,8 +338,10 @@ class CheckoutView(View):
         payment_method = request.POST.get("payment_method")
 
         try:
+            # D-11 (Issue #18): the same check as in CartCheckoutView.post above.
+            # user=request.user means only this user's own address is accepted.
             savedAddresses = user_models.Addresses.objects.get(
-                id=request.POST.get("savedAddresses")
+                id=request.POST.get("savedAddresses"), user=request.user
             )
         except user_models.Addresses.DoesNotExist:
             messages.info(request, "Please Select Address", "alert-danger")
