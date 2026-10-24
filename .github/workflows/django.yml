@@ -1,4 +1,4 @@
-# CI for Ecomm: runs every check in Table 5 on each push and pull request.
+# CI for Ecomm: one job for each CI control in Table 5.
 name: Django CI
 
 # Run on a push to any branch, and on a pull request to main.
@@ -8,38 +8,51 @@ on:
     branches: [ "main" ]
 
 jobs:
-  quality:
+  # Gate: the build fails if Ruff reports any finding.
+  lint:
+    name: Lint (Ruff)
     runs-on: ubuntu-latest
-
     steps:
-    # Get the code of this commit.
-    - uses: actions/checkout@v4
-
-    # Use Python 3.13, the same version as the laptop.
-    - name: Set up Python 3.13
-      uses: actions/setup-python@v5
+    - uses: actions/checkout@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: "3.13"
+    - run: pip install -r requirements-dev.txt
+    - run: ruff check . --select E,F,W,B --extend-exclude migrations
 
-    # Install the app and the pinned test tools (requirements-dev.txt).
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements-dev.txt
+  # Gate: the build fails on a Medium or High Bandit finding (-ll).
+  security:
+    name: Security (Bandit)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+    - uses: actions/setup-python@v6
+      with:
+        python-version: "3.13"
+    - run: pip install -r requirements-dev.txt
+    - run: bandit -r ecomm home orders products seller_dashboard shops users manage.py -x "*/migrations/*" -ll
 
-    # Gate: the build fails if Ruff reports any finding (Table 5).
-    - name: Lint (Ruff)
-      run: ruff check . --select E,F,W,B --extend-exclude migrations
+  # Gate: every test must pass (TC-1 to TC-4, and TC-5 regression),
+  # and coverage of orders and products must not fall below 75% (ratchet).
+  tests:
+    name: Tests and coverage (pytest)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+    - uses: actions/setup-python@v6
+      with:
+        python-version: "3.13"
+    - run: pip install -r requirements-dev.txt
+    - run: pytest -v --cov=orders --cov=products --cov-report=term-missing --cov-fail-under=75
 
-    # Gate: the build fails on a Medium or High Bandit finding (-ll).
-    - name: Security scan (Bandit)
-      run: bandit -r ecomm home orders products seller_dashboard shops users manage.py -x "*/migrations/*" -ll
-
-    # Gate: every test must pass, and coverage of orders and products
-    # must not fall below 75%, the level reached in this cycle (ratchet).
-    - name: Tests and coverage (pytest)
-      run: pytest -v --cov=orders --cov=products --cov-report=term-missing --cov-fail-under=75
-
-    # Report only: complexity of the project code, for the after-measurements.
-    - name: Complexity report (Radon)
-      run: radon cc . -a -s -i migrations,tests
+  # Report only: complexity of the project code (no gate).
+  complexity:
+    name: Complexity report (Radon)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+    - uses: actions/setup-python@v6
+      with:
+        python-version: "3.13"
+    - run: pip install -r requirements-dev.txt
+    - run: radon cc . -a -s -i migrations,tests
