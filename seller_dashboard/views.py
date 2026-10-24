@@ -51,6 +51,11 @@ def dashboard(request):
 
 
 def ViewOrder(request, order_id):
+    # D-12 (Issue #19): the same login check as the other seller pages here.
+    # Before, a visitor was sent to the home page, not to the login page.
+    if not request.user.is_authenticated:
+        # Stop here and open the login page.
+        return HttpResponseRedirect("/login")
     order = get_object_or_404(order_models.Orders, id=order_id)
     if not order.product.shop.user == request.user:
         return HttpResponseRedirect("/")

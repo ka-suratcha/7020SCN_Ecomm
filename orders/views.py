@@ -10,6 +10,13 @@ from orders import utiles
 
 
 def ViewOrder(request, order_id):
+    # D-12 (Issue #19): a visitor must log in before seeing an order page.
+    # - Before, there was no login check. The owner check below failed for a
+    #   visitor and sent them to the home page, without asking them to log in.
+    # - next=... brings the customer back to this order after they log in.
+    if not request.user.is_authenticated:
+        # Stop here and open the login page.
+        return HttpResponseRedirect(f"/login?next=/order/{order_id}/")
     order = get_object_or_404(order_models.Orders, id=order_id)
     if not order.user == request.user:
         return HttpResponseRedirect("/")
