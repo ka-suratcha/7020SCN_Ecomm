@@ -1,0 +1,70 @@
+Run started:2026-10-24 02:43:50.481324+00:00
+
+Test results:
+>> Issue: [B106:hardcoded_password_funcarg] Possible hardcoded password: 'adminpassword'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b106_hardcoded_password_funcarg.html
+   Location: users\management\commands\setup_dev_data.py:28:12
+27	                username=username,
+28	                password='adminpassword',
+29	                first_name='Admin',
+30	                last_name='User'
+31	            )
+32	            self.stdout.write(self.style.SUCCESS(f'Successfully created superuser: {admin_email} (Username: {username})'))
+33	        else:
+34	            self.stdout.write(self.style.WARNING(f'Superuser {admin_email} already exists.'))
+35	
+
+--------------------------------------------------
+>> Issue: [B106:hardcoded_password_funcarg] Possible hardcoded password: 'password123'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b106_hardcoded_password_funcarg.html
+   Location: users\management\commands\setup_dev_data.py:43:12
+42	                username=username,
+43	                password='password123',
+44	                first_name='John',
+45	                last_name='Doe'
+46	            )
+47	            self.stdout.write(self.style.SUCCESS(f'Successfully created standard user: {user_email} (Username: {username})'))
+48	        else:
+49	            self.stdout.write(self.style.WARNING(f'Standard user {user_email} already exists.'))
+50	
+
+--------------------------------------------------
+>> Issue: [B106:hardcoded_password_funcarg] Possible hardcoded password: 'password123'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b106_hardcoded_password_funcarg.html
+   Location: users\management\commands\setup_dev_data.py:59:21
+58	                username=username,
+59	                password='password123',
+60	                shop_name=shop_name,
+61	                first_name='Jane',
+62	                last_name='Seller'
+63	            )
+64	            
+65	            # Create the Shop object
+66	            Shops.objects.create(
+67	                user=seller,
+
+--------------------------------------------------
+
+Code scanned:
+	Total lines of code: 1384
+	Total lines skipped (#nosec): 0
+	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 0
+
+Run metrics:
+	Total issues (by severity):
+		Undefined: 0
+		Low: 3
+		Medium: 0
+		High: 0
+	Total issues (by confidence):
+		Undefined: 0
+		Low: 0
+		Medium: 3
+		High: 0
+Files skipped (0):
