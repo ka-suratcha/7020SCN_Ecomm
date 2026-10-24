@@ -72,10 +72,10 @@ class Register(View):
             counter += 1
 
         user = user_models.User.objects.create_user(
-            email=email, 
+            email=email,
             username=username,
-            password=password, 
-            first_name=first_name, 
+            password=password,
+            first_name=first_name,
             last_name=last_name
         )
 
@@ -128,9 +128,13 @@ class Profile(View):
             if newPassword != confirmPassword:
                 messages.error(request, "Passwords do not match", "alert-danger")
                 return HttpResponseRedirect(request.path_info)
-            
+
             if newPassword == currentPassword:
-                messages.error(request, "New password cannot be same as current password", "alert-danger")
+                messages.error(
+                    request,
+                    "New password cannot be same as current password",
+                    "alert-danger",
+                )
                 return HttpResponseRedirect(request.path_info)
 
             if not request.user.check_password(currentPassword):
@@ -140,7 +144,7 @@ class Profile(View):
             request.user.set_password(newPassword)
             request.user.save()
             messages.success(request, "Password changed successfully", "alert-success")
-            
+
         return HttpResponseRedirect("/profile/")
 
 
@@ -158,7 +162,7 @@ class SaveAddress(View):
         if not request.user.is_authenticated:
             messages.info(request, "Please Login First", "alert-danger")
             return HttpResponseRedirect("/login?next=/save_address/")
-        
+
         name = request.POST.get("customerName")
         mobile = request.POST.get("phoneNumber")
         city = request.POST.get("city")
@@ -180,7 +184,7 @@ class EditAddress(View):
         if not request.user.is_authenticated:
             messages.info(request, "Please Login First", "alert-danger")
             return HttpResponseRedirect("/login")
-        
+
         try:
             address = user_models.Addresses.objects.get(id=address_id)
         except user_models.Addresses.DoesNotExist:
@@ -190,14 +194,14 @@ class EditAddress(View):
         if not address.user == request.user:
             messages.info(request, "Not found", "alert-danger")
             return HttpResponseRedirect("/save_address/")
-        
+
         return render(request, "user/edit_address.html", {"address": address})
 
     def post(self, request, address_id):
         if not request.user.is_authenticated:
             messages.info(request, "Please Login First", "alert-danger")
             return HttpResponseRedirect("/login")
-        
+
         try:
             address = user_models.Addresses.objects.get(id=address_id)
         except user_models.Addresses.DoesNotExist:
@@ -207,7 +211,7 @@ class EditAddress(View):
         if not address.user == request.user:
             messages.info(request, "Not found", "alert-danger")
             return HttpResponseRedirect("/save_address/")
-        
+
         name = request.POST.get("customerName")
         mobile = request.POST.get("phoneNumber")
         city = request.POST.get("city")

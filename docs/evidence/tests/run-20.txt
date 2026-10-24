@@ -1,0 +1,58 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.3, pytest-9.1.1, pluggy-1.6.0 -- C:\dev\Ecomm\7020SCN_Ecomm\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.10, settings: ecomm.settings (from ini)
+rootdir: C:\dev\Ecomm\7020SCN_Ecomm
+configfile: pytest.ini
+testpaths: tests
+plugins: cov-7.1.0, django-4.14.0
+collecting ... collected 46 items
+
+tests/test_smoke.py::test_home_page_loads_for_a_visitor PASSED           [  2%]
+tests/test_tc1_totals.py::test_tc1_1_order_total_with_whole_price PASSED [  4%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[19.99x1] PASSED [  6%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[19.99x2] PASSED [  8%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[19.99x3] PASSED [ 10%]
+tests/test_tc1_totals.py::test_tc1_2_order_total_with_decimal_price[1.10x3] PASSED [ 13%]
+tests/test_tc1_totals.py::test_tc1_3_cart_page_shows_exact_subtotal PASSED [ 15%]
+tests/test_tc1_totals.py::test_tc1_4_cart_order_total_adds_all_orders PASSED [ 17%]
+tests/test_tc2_stock.py::test_tc2_1_buy_now_reduces_stock_and_creates_order PASSED [ 19%]
+tests/test_tc2_stock.py::test_tc2_2_buy_now_stock_boundaries[qty1] PASSED [ 21%]
+tests/test_tc2_stock.py::test_tc2_2_buy_now_stock_boundaries[qty5=stock] PASSED [ 23%]
+tests/test_tc2_stock.py::test_tc2_2_buy_now_stock_boundaries[qty6=stock+1] PASSED [ 26%]
+tests/test_tc2_stock.py::test_tc2_3_buy_now_rejects_invalid_quantity[qty0] PASSED [ 28%]
+tests/test_tc2_stock.py::test_tc2_3_buy_now_rejects_invalid_quantity[qty-1] PASSED [ 30%]
+tests/test_tc2_stock.py::test_tc2_3_buy_now_rejects_invalid_quantity[qty-abc] PASSED [ 32%]
+tests/test_tc2_stock.py::test_tc2_4_cart_checkout_orders_every_item PASSED [ 34%]
+tests/test_tc2_stock.py::test_tc2_5_cart_checkout_orders_nothing_if_one_item_is_short PASSED [ 36%]
+tests/test_tc2_stock.py::test_tc2_6_cancel_returns_stock_once[customer] PASSED [ 39%]
+tests/test_tc2_stock.py::test_tc2_6_cancel_returns_stock_once[seller] PASSED [ 41%]
+tests/test_tc3_payment.py::test_tc3_1_buy_now_sends_exact_amount_to_stripe[19.99x1] PASSED [ 43%]
+tests/test_tc3_payment.py::test_tc3_1_buy_now_sends_exact_amount_to_stripe[1.10x1] PASSED [ 45%]
+tests/test_tc3_payment.py::test_tc3_1_buy_now_sends_exact_amount_to_stripe[0.29x1] PASSED [ 47%]
+tests/test_tc3_payment.py::test_tc3_1_buy_now_sends_exact_amount_to_stripe[19.99x2] PASSED [ 50%]
+tests/test_tc3_payment.py::test_tc3_2_cart_payment_charges_each_item_once PASSED [ 52%]
+tests/test_tc3_payment.py::test_tc3_3_stripe_error_does_not_create_payment PASSED [ 54%]
+tests/test_tc3_payment.py::test_tc3_4_payment_done_marks_payment_as_paid PASSED [ 56%]
+tests/test_tc3_payment.py::test_tc3_5_order_page_shows_card_payment_status PASSED [ 58%]
+tests/test_tc3_payment.py::test_tc3_6_payment_done_without_payment_is_not_paid PASSED [ 60%]
+tests/test_tc3_payment.py::test_tc3_7_order_page_after_stripe_error_opens PASSED [ 63%]
+tests/test_tc3_payment.py::test_tc3_8_cancelled_payment_cancels_order_and_returns_stock PASSED [ 65%]
+tests/test_tc4_access.py::test_tc4_1_visitor_is_sent_to_login[checkout-slug] PASSED [ 67%]
+tests/test_tc4_access.py::test_tc4_1_visitor_is_sent_to_login[cart_checkout-None] PASSED [ 69%]
+tests/test_tc4_access.py::test_tc4_1_visitor_is_sent_to_login[order-id] PASSED [ 71%]
+tests/test_tc4_access.py::test_tc4_1_visitor_is_sent_to_login[cancel_order-id] PASSED [ 73%]
+tests/test_tc4_access.py::test_tc4_1_visitor_is_sent_to_login[dashboard-None] PASSED [ 76%]
+tests/test_tc4_access.py::test_tc4_1_visitor_is_sent_to_login[orders_view-None] PASSED [ 78%]
+tests/test_tc4_access.py::test_tc4_1_visitor_is_sent_to_login[seller_orders-id] PASSED [ 80%]
+tests/test_tc4_access.py::test_tc4_1_visitor_is_sent_to_login[generate_invoice-id] PASSED [ 82%]
+tests/test_tc4_access.py::test_tc4_2_customer_cannot_use_another_customers_order[order] PASSED [ 84%]
+tests/test_tc4_access.py::test_tc4_2_customer_cannot_use_another_customers_order[cancel_order] PASSED [ 86%]
+tests/test_tc4_access.py::test_tc4_3_checkout_rejects_another_customers_address[buy_now] PASSED [ 89%]
+tests/test_tc4_access.py::test_tc4_3_checkout_rejects_another_customers_address[cart] PASSED [ 91%]
+tests/test_tc4_access.py::test_tc4_4_only_shop_owner_opens_seller_order_pages[other_customer-seller_orders] PASSED [ 93%]
+tests/test_tc4_access.py::test_tc4_4_only_shop_owner_opens_seller_order_pages[other_customer-generate_invoice] PASSED [ 95%]
+tests/test_tc4_access.py::test_tc4_4_only_shop_owner_opens_seller_order_pages[other_seller-seller_orders] PASSED [ 97%]
+tests/test_tc4_access.py::test_tc4_4_only_shop_owner_opens_seller_order_pages[other_seller-generate_invoice] PASSED [100%]
+
+======================== 46 passed in 66.82s (0:01:06) ========================

@@ -6,9 +6,13 @@ from django.views import View
 from . import models as home_models
 
 def home(request):
-    if request.session.get("next"): request.session["next"] = None
+    if request.session.get("next"):
+        # E701: the statement is on its own line, with the same effect.
+        request.session["next"] = None
 
-    if request.session.get("payment_session"): request.session["payment_session"] = None
+    if request.session.get("payment_session"):
+        # E701: the statement is on its own line, with the same effect.
+        request.session["payment_session"] = None
 
     products = product_models.Products.objects.all()[:8]
     catagories = product_models.Category.objects.all()[:5]
@@ -26,7 +30,7 @@ class Search(View):
             return render(request, "home/search.html", {"products": products, "q": q})
         else:
             return HttpResponseRedirect("/")
-        
+
 
 def subscribe(request):
     email = request.POST.get("email")

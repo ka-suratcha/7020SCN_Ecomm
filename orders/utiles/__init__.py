@@ -28,7 +28,7 @@ def create_checkout_session(order):
     except Exception as e:
         print(f"An error occurred: {e}")
         return None
-    
+
 def create_checkout_session_cart(order):
     try:
         line_items = []

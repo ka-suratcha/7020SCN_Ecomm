@@ -9,7 +9,6 @@ from django.http import HttpResponse
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
-from users import models as user_models
 from products import models as product_models
 from orders import models as order_models
 from shops import models as shop_models
@@ -63,7 +62,9 @@ def ViewOrder(request, order_id):
     if not order.payment_method == "Cash On Delivery":
         try:
             payment_status = utiles.check_payment_status(order.payment_ref.payment_id)
-        except:
+        # E722: "except Exception" does not catch Ctrl+C or a system exit.
+        # Every other error is still caught, so the result is the same.
+        except Exception:
             payment_status = None
         data = {"order": order, "payment_status": payment_status}
     else:
