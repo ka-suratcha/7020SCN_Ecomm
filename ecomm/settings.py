@@ -2,6 +2,9 @@ from pathlib import Path
 import os
 import mimetypes
 
+# get_random_secret_key makes a new random key (Django's own function).
+from django.core.management.utils import get_random_secret_key
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -10,10 +13,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-8j#t+633ubijv4=^e51aj#po^f!rmfiz5&$8(0d5$%c4(i#hv("
+# OBS-5 (Issue #21): read the secret key from an environment variable.
+# - Before, the key was written here, so everyone who can read the repo had it.
+#   Anyone with the key can fake a login session.
+# - If DJANGO_SECRET_KEY is not set (for example on a student's laptop or in
+#   the tests), a new random key is made each time the server starts.
+#   Nobody else knows it, but logins end when the server restarts.
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY") or get_random_secret_key()
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# OBS-4 (Issue #21): DEBUG is on only when DJANGO_DEBUG is "True".
+# - Before, DEBUG was always True, so error pages showed code and settings.
+# - The safe default is off. For local work, set DJANGO_DEBUG=True first.
+DEBUG = os.environ.get("DJANGO_DEBUG") == "True"
 
 ALLOWED_HOSTS = []
 
@@ -152,5 +164,10 @@ TEMPLATE_CONTEXT_PROCESSORS = [
     'users.context_processors.cart_count',
 ]
 
-STRIPE_PUBLISHABLE_KEY = "pk_test_**********"
-STRIPE_SECRET_KEY = "sk_test_***********"
+# OBS-6 (Issue #21): read the Stripe keys from environment variables.
+# - Before, a place for the secret key was written here, which invites a real
+#   key to be saved in the code.
+# - If a key is not set, it is empty, so Stripe calls fail and are caught
+#   (orders/utiles). The tests do not need a key, because Stripe is mocked.
+STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "")
+STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
