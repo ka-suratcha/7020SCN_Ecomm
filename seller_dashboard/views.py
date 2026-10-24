@@ -3,6 +3,8 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.views import View
 from django.db.models import Sum
+# transaction.atomic() keeps the cancel and the stock change together (D-9).
+from django.db import transaction
 from django.http import HttpResponse
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -91,8 +93,19 @@ def cancel_order(request, order_id):
     if not order.product.shop.user == request.user:
         return HttpResponseRedirect("/")
 
-    order.status = "Cancelled"
-    order.save()
+    # D-9 (Issue #15): put the stock back when an order is cancelled, only once.
+    # - Before, the view only set the status, so the stock never came back.
+    # - If the status is already "Cancelled", the stock came back before
+    #   (here, or in payment_canceled in orders/views.py), so we skip it.
+    if order.status != "Cancelled":
+        # transaction.atomic(): if any step fails, every change below is undone,
+        # so we never get a cancelled order without its stock back.
+        with transaction.atomic():
+            order.status = "Cancelled"
+            order.save()
+            # Put the bought quantity back into the product's stock.
+            order.product.in_stock += order.quantity
+            order.product.save()
 
     messages.success(request, "Order Cancelled Successfully", "alert-success")
     if request.GET.get("next"):
